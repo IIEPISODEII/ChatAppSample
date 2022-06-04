@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+        <variable
+            name="viewmodel"
+            type="" />
+    </data>
+    
+    <androidx.constraintlayout.widget.ConstraintLayout 
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".presentation.view.ChatActivity">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_chat_recyclerview"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            app:layout_constraintBottom_toTopOf="@+id/ll_chat_linearlayout"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <LinearLayout
+            android:id="@+id/ll_chat_linearlayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:orientation="horizontal"
+            android:weightSum="100"
+            app:layout_constraintBottom_toBottomOf="parent
+"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_chat_messagebox"
+                android:layout_width="wrap_content"
+                android:layout_height="50dp"
+                android:layout_marginStart="10dp"
+                android:layout_weight="95"
+                android:background="@drawable/layout_messagebox_bg"
+                android:hint="Type a Message"
+                android:paddingHorizontal="15dp" />
+
+            <ImageButton
+                android:id="@+id/imgbtn_send_message"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_weight="5"
+                android:background="@color/white"
+                android:padding="5dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_baseline_send_24" />
+        </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>

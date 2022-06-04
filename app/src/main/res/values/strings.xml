@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">ChatAppSample</string>
+    <!-- Strings used for fragments for navigation -->
+
+    <string name="e_mail_address">E-mail</string>
+    <string name="password">Password</string>
+    <string name="login">Login</string>
+    <string name="sign_up">Create new <b>Account</b></string>
+    <string name="name">Name</string>
+    <string name="authorization_failed">Please check your e-mail or password.</string>
+</resources>

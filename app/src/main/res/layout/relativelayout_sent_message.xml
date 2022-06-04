@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingTop="10dp">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/tv_sent_message_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@id/tv_sent_message"
+        android:layout_toStartOf="@id/tv_sent_message"
+        android:paddingHorizontal="15dp"
+        android:paddingVertical="5dp"
+        android:text="This is sent time"
+        android:textColor="#7F7F7F"
+        android:textSize="12sp" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/tv_sent_message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="10dp"
+        android:background="@drawable/layout_sent_message_tv"
+        android:paddingHorizontal="15dp"
+        android:paddingVertical="5dp"
+        android:text="This is sent Message."
+        android:textColor="@color/white"
+        android:textSize="18sp" />
+
+
+</RelativeLayout>
