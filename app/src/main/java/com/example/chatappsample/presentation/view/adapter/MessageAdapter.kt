@@ -6,7 +6,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.example.chatappsample.Application
 import com.example.chatappsample.R
-import com.example.chatappsample.model.Message
+import com.example.chatappsample.domain.dto.Message
 import com.google.android.material.textview.MaterialTextView
 
 class MessageAdapter(val messageList: ArrayList<Message>) :

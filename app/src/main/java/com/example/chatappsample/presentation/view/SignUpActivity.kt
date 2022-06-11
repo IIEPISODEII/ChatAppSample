@@ -7,10 +7,12 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.chatappsample.Application
 import com.example.chatappsample.R
-import com.example.chatappsample.model.User
+import com.example.chatappsample.domain.dto.User
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class SignUpActivity : AppCompatActivity() {
 
     private val nameEditText by lazy { this.findViewById<TextInputEditText>(R.id.et_signup_name) }

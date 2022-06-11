@@ -8,7 +8,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.example.chatappsample.presentation.view.ChatActivity
 import com.example.chatappsample.R
-import com.example.chatappsample.model.User
+import com.example.chatappsample.domain.dto.User
 import com.google.android.material.textview.MaterialTextView
 
 class MainUserAdapter(val ctx: Context, val userList: ArrayList<User>): RecyclerView.Adapter<MainUserAdapter.CustomViewHolder>() {
@@ -23,12 +23,12 @@ class MainUserAdapter(val ctx: Context, val userList: ArrayList<User>): Recycler
     }
 
     override fun onBindViewHolder(holder: CustomViewHolder, position: Int) {
-        val currentUser = userList[position]
-        holder.userName.text = currentUser.name
+        val selectedUser = userList[position]
+        holder.userName.text = selectedUser.name
         holder.itemView.setOnClickListener {
             val intent = Intent(ctx, ChatActivity::class.java).apply {
-                putExtra("name", currentUser.name)
-                putExtra("uid", currentUser.uid)
+                putExtra("name", selectedUser.name)
+                putExtra("uid", selectedUser.uid)
             }
             ctx.startActivity(intent)
         }

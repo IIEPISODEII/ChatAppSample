@@ -11,7 +11,10 @@ import com.example.chatappsample.Application
 import com.example.chatappsample.R
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
+import com.google.firebase.auth.FirebaseAuth
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class LogInActivity : AppCompatActivity() {
 
     private val emailEditText by lazy { this.findViewById<TextInputEditText>(R.id.et_login_e_mail) }
@@ -46,7 +49,7 @@ class LogInActivity : AppCompatActivity() {
     }
 
     private fun login(email: String, password: String) {
-        Application.mFirebaseAuth.signInWithEmailAndPassword(email, password)
+        FirebaseAuth.getInstance().signInWithEmailAndPassword(email, password)
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
                     finish()
