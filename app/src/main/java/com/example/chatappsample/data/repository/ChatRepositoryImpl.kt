@@ -11,8 +11,7 @@ import javax.inject.Inject
 
 class ChatRepositoryImpl @Inject constructor(
     private val firebaseDatabase: FirebaseDatabase
-    ) :
-    ChatRepository {
+) : ChatRepository {
 
     override fun getReceivedMessage(
         chatRoom: String,

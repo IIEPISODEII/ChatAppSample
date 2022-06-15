@@ -5,9 +5,8 @@ import com.example.chatappsample.domain.repository.ChatRepository
 import javax.inject.Inject
 
 class GetReceivedMessageUsecase @Inject constructor(private val chatRepository: ChatRepository) {
-    fun getReceivedMessage(chatRoom: String, receiveListener: () -> Unit): ArrayList<Message> {
-        return chatRepository.getReceivedMessage(chatRoom) {
-            receiveListener()
-        }
+
+    fun getReceivedMessage(chatRoom: String): ArrayList<Message> {
+        return chatRepository.getReceivedMessage(chatRoom)
     }
 }

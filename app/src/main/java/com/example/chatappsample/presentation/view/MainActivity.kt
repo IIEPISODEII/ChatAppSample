@@ -26,10 +26,10 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity: AppCompatActivity() {
 
-    lateinit var viewModel: UserViewModel
+    val viewModel: UserViewModel = ViewModelProvider(this)[UserViewModel::class.java]
     private lateinit var mBinding: ActivityMainBinding
 
-    private lateinit var userList: ArrayList<User>
+    private var userList = arrayListOf<User>()
     private lateinit var rvAdapter: MainUserAdapter
 
     private val rvUserList by lazy { this.findViewById<RecyclerView>(R.id.rv_main_user_recyclerview) }
@@ -38,16 +38,15 @@ class MainActivity: AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         // Initialize Viewmodel Databinding & Lifecycle Setting
-        viewModel = ViewModelProvider(this)[UserViewModel::class.java]
         mBinding = DataBindingUtil.setContentView(this, R.layout.activity_main)
         mBinding.viewModel = this@MainActivity.viewModel
         mBinding.lifecycleOwner = this@MainActivity
 
-
         // Initialize recyclerview
-        userList = ArrayList<User>()
-        userList = viewModel.getAllUsers {
-            rvAdapter.notifyDataSetChanged()
+
+        userList = arrayListOf()
+        viewModel.allUsers.observe(this) {
+            rvAdapter.setUserList(it)
         }
         rvAdapter = MainUserAdapter(ctx = this@MainActivity, userList = userList)
         rvUserList.adapter = rvAdapter
@@ -62,7 +61,7 @@ class MainActivity: AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.action_log_out -> {
-                viewModel.signOut {  }
+                viewModel.signOut()
                 finish()
                 val intent = Intent(this, LogInActivity::class.java)
                 startActivity(intent)

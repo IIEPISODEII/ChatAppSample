@@ -8,14 +8,12 @@ class SendMessageUsecase @Inject constructor(private val chatRepository: ChatRep
     fun sendMessage(
         message: Message,
         senderChatRoom: String,
-        receiverChatRoom: String,
-        sendListener: () -> Unit
-    ) {
-        chatRepository.sendMessage(
+        receiverChatRoom: String
+    ) : Boolean {
+        return chatRepository.sendMessage(
             message = message,
             senderChatRoom = senderChatRoom,
-            receiverChatRoom = receiverChatRoom,
-            sendListener = sendListener
+            receiverChatRoom = receiverChatRoom
         )
     }
 }

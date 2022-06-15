@@ -1,5 +1,8 @@
 package com.example.chatappsample.presentation.viewmodel
 
+import androidx.databinding.Bindable
+import androidx.databinding.Observable
+import androidx.databinding.PropertyChangeRegistry
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -16,37 +19,38 @@ class ChatViewModel @Inject constructor(
     private val sendMessageUsecase: SendMessageUsecase,
     private val receivedMessageUsecase: GetReceivedMessageUsecase,
     private val getCurrentUserUsecase: GetCurrentUserUsecase
-) : ViewModel() {
+) : ViewModel(), Observable {
 
-    private val _messageTxt = MutableLiveData<String>()
-    val messageTxt: LiveData<String>
-        get() = _messageTxt
+    @Bindable
+    val messageTxt = MutableLiveData<String>()
 
     fun sendMessage(
         message: Message,
         senderChatRoom: String,
-        receiveChatRoom: String,
-        sendListener: () -> Unit
+        receiveChatRoom: String
     ) {
         sendMessageUsecase.sendMessage(
             message = message,
             senderChatRoom = senderChatRoom,
-            receiverChatRoom = receiveChatRoom,
-            sendListener = sendListener
+            receiverChatRoom = receiveChatRoom
         )
     }
 
-    fun getReceivedMessage(
-        chatRoom: String,
-        receiveListener: () -> Unit
-    ): ArrayList<Message> {
-        return receivedMessageUsecase.getReceivedMessage(
-            chatRoom,
-            receiveListener
-        )
+    fun getReceivedMessage(chatRoom: String): ArrayList<Message> {
+        return receivedMessageUsecase.getReceivedMessage(chatRoom)
     }
 
     fun getCurrentUser(): User? {
-        return getCurrentUserUsecase.getCurrentUser {  }
+        return getCurrentUserUsecase.getCurrentUser()
+    }
+
+
+    private val callbacks: PropertyChangeRegistry by lazy { PropertyChangeRegistry() }
+    override fun addOnPropertyChangedCallback(callback: Observable.OnPropertyChangedCallback?) {
+        callbacks.add(callback)
+    }
+
+    override fun removeOnPropertyChangedCallback(callback: Observable.OnPropertyChangedCallback?) {
+        callbacks.remove(callback)
     }
 }

@@ -9,7 +9,7 @@ import com.example.chatappsample.R
 import com.example.chatappsample.domain.dto.Message
 import com.google.android.material.textview.MaterialTextView
 
-class MessageAdapter(val messageList: ArrayList<Message>) :
+class MessageAdapter(val messageList: ArrayList<Message>, val senderUID: String) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     private val SENT_MESSAGE = 0
@@ -55,6 +55,6 @@ class MessageAdapter(val messageList: ArrayList<Message>) :
     override fun getItemViewType(position: Int): Int {
         val currentMessage = messageList[position]
 
-        return if (Application.mFirebaseAuth.currentUser?.uid == currentMessage.senderId) SENT_MESSAGE else RECEIVED_MESSAGE
+        return if (senderUID == currentMessage.senderId) SENT_MESSAGE else RECEIVED_MESSAGE
     }
 }
