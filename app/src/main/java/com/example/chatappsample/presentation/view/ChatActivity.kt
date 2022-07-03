@@ -43,31 +43,30 @@ class ChatActivity : AppCompatActivity() {
         mBinding.viewmodel = chatViewModel
         mBinding.lifecycleOwner = this
 
-        chatViewModel.messageTxt.observe(this) {
-            messageText = it
+        // get intent data from previous activity
+        val userName = intent.getStringExtra(OTHER_NAME)?.let {
+            supportActionBar?.title = it
         }
-
-        val userName = intent.getStringExtra(OTHER_NAME)
         val receiverUID = intent.getStringExtra(OTHER_UID)
         val senderUID = intent.getStringExtra(CURRENT_UID)
-
-
         senderRoom = receiverUID + senderUID
         receiverRoom = senderUID + receiverUID
-        chatViewModel.getReceivedMessage(senderRoom!!)
 
-        supportActionBar?.title = userName
+        chatViewModel.getReceivedMessage(receiverRoom!!)
+        chatViewModel.messageTxt.observe(this) { messageText = it }
 
+
+        // Adding data to Recyclerview
         messageAdapter = MessageAdapter(messageList = listOf(), senderUID = senderUID ?: "")
         chattingRecyclerView.adapter = messageAdapter
         chattingRecyclerView.layoutManager = LinearLayoutManager(this)
         chatViewModel.messagesList.observe(this) {
             messageAdapter.messageList = it
-            println("MESSAGE_LIST: $it")
             messageAdapter.notifyDataSetChanged()
         }
 
-        // Adding the message to db
+
+        // Send the message to db
         sendMessageButton.setOnClickListener {
 
             if (mBinding.etChatMessagebox.text!!.isEmpty()) return@setOnClickListener
@@ -90,9 +89,6 @@ class ChatActivity : AppCompatActivity() {
             val imm = getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
             imm.hideSoftInputFromWindow(it.windowToken, 0)
         }
-
-        // Adding data to Recyclerview
-
     }
 
     companion object {

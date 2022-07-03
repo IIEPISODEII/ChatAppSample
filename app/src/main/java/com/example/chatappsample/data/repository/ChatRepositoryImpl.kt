@@ -20,20 +20,11 @@ class ChatRepositoryImpl @Inject constructor(
     ) {
         listener.onStart()
 
-        firebaseDatabase.reference.child("user").child(chatRoom).child("messages")
+        firebaseDatabase.reference.child("chats").child(chatRoom).child("messages")
             .addValueEventListener(object : ValueEventListener {
                 @SuppressLint("NotifyDataSetChanged")
                 override fun onDataChange(snapshot: DataSnapshot) {
                     listener.onSuccess(snapshot)
-
-//                    messageList.clear()
-//
-//                    for (postSnapshot in snapshot.children) {
-//                        val msg = postSnapshot.getValue(Message::class.java)
-//
-//                        messageList.add(msg!!)
-//                    }
-
                 }
 
                 override fun onCancelled(error: DatabaseError) {

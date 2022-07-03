@@ -8,6 +8,6 @@ import javax.inject.Inject
 class GetReceivedMessageUsecase @Inject constructor(private val chatRepository: ChatRepository) {
 
     fun getReceivedMessage(chatRoom: String, listener: OnGetDataListener) {
-        return chatRepository.getReceivedMessage(chatRoom, listener)
+        chatRepository.getReceivedMessage(chatRoom, listener)
     }
 }
