@@ -6,11 +6,16 @@ import androidx.databinding.PropertyChangeRegistry
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.example.chatappsample.domain.`interface`.OnGetDataListener
 import com.example.chatappsample.domain.dto.Message
 import com.example.chatappsample.domain.dto.User
+import com.example.chatappsample.domain.repository.UserRepository
 import com.example.chatappsample.domain.usecase.GetCurrentUserUsecase
 import com.example.chatappsample.domain.usecase.GetReceivedMessageUsecase
 import com.example.chatappsample.domain.usecase.SendMessageUsecase
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
@@ -27,21 +32,44 @@ class ChatViewModel @Inject constructor(
     fun sendMessage(
         message: Message,
         senderChatRoom: String,
-        receiveChatRoom: String
-    ) {
-        sendMessageUsecase.sendMessage(
+        receiverChatRoom: String
+    ): Boolean {
+        return sendMessageUsecase.sendMessage(
             message = message,
             senderChatRoom = senderChatRoom,
-            receiverChatRoom = receiveChatRoom
+            receiverChatRoom = receiverChatRoom
         )
     }
 
-    fun getReceivedMessage(chatRoom: String): ArrayList<Message> {
-        return receivedMessageUsecase.getReceivedMessage(chatRoom)
-    }
 
-    fun getCurrentUser(): User? {
-        return getCurrentUserUsecase.getCurrentUser()
+    private val _messagesList: MutableLiveData<List<Message>> = MutableLiveData()
+    val messagesList: LiveData<List<Message>>
+        get() = _messagesList
+
+    fun getReceivedMessage(chatRoom: String) {
+        val mListener = object: OnGetDataListener {
+            override fun onSuccess(dataSnapshot: DataSnapshot) {
+                val msgList = mutableListOf<Message>()
+                for (snapshot in dataSnapshot.children) {
+                    if (snapshot == null) continue
+
+                    val message = snapshot.getValue(Message::class.java)!!
+                    msgList.add(message)
+                }
+
+                _messagesList.value = msgList
+            }
+
+            override fun onStart() {
+            }
+
+            override fun <T> onFailure(error: T) {
+                if (error is DatabaseError) throw Exception(error.message)
+            }
+
+        }
+
+        receivedMessageUsecase.getReceivedMessage(chatRoom, mListener)
     }
 
 
@@ -49,6 +77,7 @@ class ChatViewModel @Inject constructor(
     override fun addOnPropertyChangedCallback(callback: Observable.OnPropertyChangedCallback?) {
         callbacks.add(callback)
     }
+
 
     override fun removeOnPropertyChangedCallback(callback: Observable.OnPropertyChangedCallback?) {
         callbacks.remove(callback)

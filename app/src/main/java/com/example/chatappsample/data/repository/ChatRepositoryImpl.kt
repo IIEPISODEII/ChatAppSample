@@ -1,6 +1,7 @@
 package com.example.chatappsample.data.repository
 
 import android.annotation.SuppressLint
+import com.example.chatappsample.domain.`interface`.OnGetDataListener
 import com.example.chatappsample.domain.dto.Message
 import com.example.chatappsample.domain.repository.ChatRepository
 import com.google.firebase.database.DataSnapshot
@@ -15,41 +16,38 @@ class ChatRepositoryImpl @Inject constructor(
 
     override fun getReceivedMessage(
         chatRoom: String,
-        event: () -> Unit
-    ): ArrayList<Message> {
-        val messageList = ArrayList<Message>()
+        listener: OnGetDataListener
+    ) {
+        listener.onStart()
 
         firebaseDatabase.reference.child("user").child(chatRoom).child("messages")
             .addValueEventListener(object : ValueEventListener {
                 @SuppressLint("NotifyDataSetChanged")
                 override fun onDataChange(snapshot: DataSnapshot) {
+                    listener.onSuccess(snapshot)
 
-                    messageList.clear()
-
-                    for (postSnapshot in snapshot.children) {
-                        val msg = postSnapshot.getValue(Message::class.java)
-
-                        messageList.add(msg!!)
-                    }
+//                    messageList.clear()
+//
+//                    for (postSnapshot in snapshot.children) {
+//                        val msg = postSnapshot.getValue(Message::class.java)
+//
+//                        messageList.add(msg!!)
+//                    }
 
                 }
 
                 override fun onCancelled(error: DatabaseError) {
-
+                    listener.onFailure(error)
                 }
 
             })
-
-        event()
-        return messageList
     }
 
     override fun sendMessage(
         message: Message,
         senderChatRoom: String,
-        receiverChatRoom: String,
-        sendListener: () -> Unit
-    ) {
+        receiverChatRoom: String
+    ) : Boolean {
         firebaseDatabase.reference.child("messages").child(senderChatRoom).child("messages")
             .push()
             .setValue(message)
@@ -59,6 +57,6 @@ class ChatRepositoryImpl @Inject constructor(
                     .setValue(message)
             }
 
-        sendListener()
+        return true
     }
 }

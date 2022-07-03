@@ -10,6 +10,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineDispatcher
 import javax.inject.Singleton
 
 @InstallIn(SingletonComponent::class)
@@ -18,8 +19,8 @@ class RepositoryModule {
 
     @Singleton
     @Provides
-    fun provideUserRepository(firebaseDatabase: FirebaseDatabase, firebaseAuth: FirebaseAuth) : UserRepository {
-        return UserRepositoryImpl(firebaseDatabase, firebaseAuth)
+    fun provideUserRepository(firebaseDatabase: FirebaseDatabase, firebaseAuth: FirebaseAuth, @IoDispatcher dispatcher: CoroutineDispatcher) : UserRepository {
+        return UserRepositoryImpl(firebaseDatabase, firebaseAuth, dispatcher)
     }
 
     @Singleton

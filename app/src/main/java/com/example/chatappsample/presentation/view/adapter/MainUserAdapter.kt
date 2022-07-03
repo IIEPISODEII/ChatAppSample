@@ -11,7 +11,7 @@ import com.example.chatappsample.R
 import com.example.chatappsample.domain.dto.User
 import com.google.android.material.textview.MaterialTextView
 
-class MainUserAdapter(val ctx: Context, private var userList: ArrayList<User>): RecyclerView.Adapter<MainUserAdapter.CustomViewHolder>() {
+class MainUserAdapter(val ctx: Context, var currentUserId: String, var userList: ArrayList<User>): RecyclerView.Adapter<MainUserAdapter.CustomViewHolder>() {
 
     inner class CustomViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val userName = itemView.findViewById<MaterialTextView>(R.id.tv_main_user_name)
@@ -27,17 +27,14 @@ class MainUserAdapter(val ctx: Context, private var userList: ArrayList<User>): 
         holder.userName.text = selectedUser.name
         holder.itemView.setOnClickListener {
             val intent = Intent(ctx, ChatActivity::class.java).apply {
-                putExtra("name", selectedUser.name)
-                putExtra("uid", selectedUser.uid)
+                putExtra(ChatActivity.OTHER_NAME, selectedUser.name)
+                putExtra(ChatActivity.OTHER_UID, selectedUser.uid)
+                putExtra(ChatActivity.CURRENT_UID, currentUserId)
             }
+
             ctx.startActivity(intent)
         }
     }
 
     override fun getItemCount(): Int = userList.size
-
-    fun setUserList(newUserList: ArrayList<User>) {
-        userList = newUserList
-        notifyDataSetChanged()
-    }
 }

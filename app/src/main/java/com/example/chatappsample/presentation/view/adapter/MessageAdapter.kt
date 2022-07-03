@@ -9,7 +9,7 @@ import com.example.chatappsample.R
 import com.example.chatappsample.domain.dto.Message
 import com.google.android.material.textview.MaterialTextView
 
-class MessageAdapter(val messageList: ArrayList<Message>, val senderUID: String) :
+class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     private val SENT_MESSAGE = 0
