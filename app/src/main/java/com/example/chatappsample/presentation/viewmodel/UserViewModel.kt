@@ -48,7 +48,7 @@ class UserViewModel @Inject constructor(
         getCurrentUserUsecase.getCurrentUser(object: OnGetDataListener {
             override fun onSuccess(dataSnapshot: DataSnapshot) {
                 val currentUser = dataSnapshot.getValue(User::class.java) ?: throw DatabaseException("NO USER")
-
+                getAllUsers(currentUserId = currentUser.uid)
                 _currentUser.postValue(currentUser)
             }
 
@@ -63,7 +63,7 @@ class UserViewModel @Inject constructor(
         })
     }
 
-    fun getAllUsers() {
+    fun getAllUsers(currentUserId: String) {
         viewModelScope.launch {
             getAllUsersUsecase.getAllUsers(object: OnGetDataListener {
                 override fun onSuccess(dataSnapshot: DataSnapshot) {
@@ -71,7 +71,7 @@ class UserViewModel @Inject constructor(
                     for (snapShot in dataSnapshot.children) {
                         val user = snapShot.getValue(User::class.java)
 
-                        if ((user != null) && (user.uid != currentUser.value?.uid)) {
+                        if ((user != null) && (user.uid != currentUserId)) {
                             userList.add(user)
                         }
                     }

@@ -50,7 +50,6 @@ class ChatViewModel @Inject constructor(
         val mListener = object: OnGetDataListener {
             override fun onSuccess(dataSnapshot: DataSnapshot) {
                 val msgList = mutableListOf<Message>()
-                println("dataSnapshot: $dataSnapshot")
                 for (snapshot in dataSnapshot.children) {
 
                     val message = snapshot.getValue(Message::class.java)!!
@@ -67,7 +66,6 @@ class ChatViewModel @Inject constructor(
             }
 
         }
-        println(chatRoom)
         receivedMessageUsecase.getReceivedMessage(chatRoom, mListener)
     }
 

@@ -1,9 +1,14 @@
 package com.example.chatappsample.presentation.view
 
 import android.app.Activity
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.os.Bundle
+import android.view.MotionEvent
+import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.ImageButton
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.ViewModelProvider
@@ -34,6 +39,9 @@ class ChatActivity : AppCompatActivity() {
     var senderRoom: String? = null
     private var messageText = ""
 
+    private var firstCreation = true
+    private var isMessageSentNow = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -63,8 +71,30 @@ class ChatActivity : AppCompatActivity() {
         chatViewModel.messagesList.observe(this) {
             messageAdapter.messageList = it
             messageAdapter.notifyDataSetChanged()
+
+            if (firstCreation) chattingRecyclerView.scrollToPosition(messageAdapter.messageList.lastIndex)
+            firstCreation = false
+
+            if (isMessageSentNow) {
+                isMessageSentNow = false
+                chattingRecyclerView.scrollToPosition(messageAdapter.messageList.lastIndex)
+            }
         }
 
+        messageAdapter.setOnSentMessageClickListener(object: MessageAdapter.MessageClickListener {
+            override fun onClick(view: View, position: Int) {
+                println("View: $view, Position: $position")
+                onClickSentMessage(view, position)
+                hideIME()
+            }
+        })
+        messageAdapter.setOnReceivedMessageClickListener(object: MessageAdapter.MessageClickListener {
+            override fun onClick(view: View, position: Int) {
+                println("View: $view, Position: $position")
+                onClickReceivedMessage(view, position)
+                hideIME()
+            }
+        })
 
         // Send the message to db
         sendMessageButton.setOnClickListener {
@@ -83,12 +113,32 @@ class ChatActivity : AppCompatActivity() {
 
             chatViewModel.sendMessage(message = messageObject, senderChatRoom = senderRoom!!, receiverChatRoom = receiverRoom!!)
             messageBox.setText("")
+            isMessageSentNow = true
+            chattingRecyclerView.layoutManager!!.scrollToPosition(messageAdapter.messageList.lastIndex)
         }
+    }
 
-        chattingRecyclerView.setOnClickListener {
-            val imm = getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
-            imm.hideSoftInputFromWindow(it.windowToken, 0)
-        }
+    fun onClickReceivedMessage(v: View, pos: Int) {
+        // 받은 메시지 클릭 시
+        val clipBoardManager = this.getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+        clipBoardManager.clearPrimaryClip()
+
+        val clipboardItem = ClipData.newPlainText("Clip from ChatSampleApp", "Clipboard Message")
+        clipBoardManager.setPrimaryClip(clipboardItem)
+    }
+
+    fun onClickSentMessage(v: View, pos: Int) {
+        // 보낸 메시지 클릭 시
+        val clipBoardManager = this.getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+        clipBoardManager.clearPrimaryClip()
+
+        val clipboardItem = ClipData.newPlainText("Clip from ChatSampleApp", "Clipboard Message")
+        clipBoardManager.setPrimaryClip(clipboardItem)
+    }
+
+    fun hideIME() {
+        val imeManager = this.getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+        imeManager.hideSoftInputFromWindow(this.currentFocus?.windowToken, 0)
     }
 
     companion object {

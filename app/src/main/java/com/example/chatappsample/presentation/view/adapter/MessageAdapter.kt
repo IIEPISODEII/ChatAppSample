@@ -4,7 +4,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.example.chatappsample.Application
 import com.example.chatappsample.R
 import com.example.chatappsample.domain.dto.Message
 import com.google.android.material.textview.MaterialTextView
@@ -14,10 +13,13 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
 
     private val SENT_MESSAGE = 0
     private val RECEIVED_MESSAGE = 1
+    private var sentMessageClickListener: MessageClickListener? = null
+    private var receivedMessageClickListener: MessageClickListener? = null
 
     inner class SentMessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val sentMessage: MaterialTextView = itemView.findViewById(R.id.tv_sent_message)
         val sentTime: MaterialTextView = itemView.findViewById(R.id.tv_sent_message_time)
+
     }
 
     inner class ReceivedMessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -42,10 +44,18 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
                 sentMessage.text = messageList[position].message
                 sentTime.text = messageList[position].sentTime
             }
+
+            if (sentMessageClickListener != null) holder.itemView.setOnClickListener {
+                sentMessageClickListener!!.onClick(it, position)
+            }
         } else {
             (holder as ReceivedMessageViewHolder).apply {
                 receivedMessage.text = messageList[position].message
                 receivedTime.text = messageList[position].sentTime
+            }
+
+            if (receivedMessageClickListener != null) holder.itemView.setOnClickListener {
+                receivedMessageClickListener!!.onClick(it, position)
             }
         }
     }
@@ -56,5 +66,17 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
         val currentMessage = messageList[position]
 
         return if (senderUID == currentMessage.senderId) SENT_MESSAGE else RECEIVED_MESSAGE
+    }
+
+    fun setOnSentMessageClickListener(messageClickListener: MessageClickListener) {
+        this.sentMessageClickListener = messageClickListener
+    }
+
+    fun setOnReceivedMessageClickListener(messageClickListener: MessageClickListener) {
+        this.receivedMessageClickListener = messageClickListener
+    }
+
+    interface MessageClickListener {
+        fun onClick(view: View, position: Int)
     }
 }

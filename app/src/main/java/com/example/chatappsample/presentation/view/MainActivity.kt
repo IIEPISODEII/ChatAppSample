@@ -45,10 +45,9 @@ class MainActivity : AppCompatActivity() {
 
         // Initialize recyclerview
         viewModel.getCurrentUser()
-        viewModel.getAllUsers()
-
         viewModel.currentUser.observe(this) {
-            rvAdapter.currentUserId = it!!.uid
+            currentUserId = it!!.uid
+            rvAdapter.currentUserId = currentUserId
         }
         rvAdapter = MainUserAdapter(ctx = this@MainActivity, currentUserId = currentUserId, userList = userList)
         rvUserList.adapter = rvAdapter
