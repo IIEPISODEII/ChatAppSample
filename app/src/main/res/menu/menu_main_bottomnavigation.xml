@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/menu_main_chatting_list"
+        android:enabled="true"
+        android:icon="@drawable/ic_baseline_chat_bubble_24"
+        android:title="채팅 목록"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/menu_main_my_page"
+        android:enabled="true"
+        android:icon="@drawable/ic_baseline_person_24"
+        android:title="마이페이지"
+        app:showAsAction="ifRoom" />
+</menu>

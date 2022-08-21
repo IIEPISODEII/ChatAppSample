@@ -1,21 +1,14 @@
 package com.example.chatappsample.presentation.view
 
-import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
-import com.example.chatappsample.Application
 import com.example.chatappsample.R
-import com.example.chatappsample.data.repository.UserRepositoryImpl
-import com.example.chatappsample.domain.dto.User
-import com.example.chatappsample.domain.usecase.GetCurrentUserUsecase
-import com.example.chatappsample.domain.usecase.SignUpUsecase
 import com.example.chatappsample.presentation.viewmodel.UserViewModel
+import com.example.chatappsample.util.Resource
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
-import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -33,6 +26,19 @@ class SignUpActivity : AppCompatActivity() {
         setContentView(R.layout.activity_sign_up)
 
         viewModel = ViewModelProvider(this)[UserViewModel::class.java]
+        viewModel.registrationStatus.observe(this) {
+            when (it) {
+                is Resource.Success -> {
+                    
+                }
+                is Resource.Loading -> {
+
+                }
+                else -> {
+
+                }
+            }
+        }
 
         signupButton.setOnClickListener {
             val name = nameEditText.text.toString()

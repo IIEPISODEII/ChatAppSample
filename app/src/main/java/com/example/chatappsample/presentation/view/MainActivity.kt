@@ -4,61 +4,56 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModelProvider
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.example.chatappsample.R
 import com.example.chatappsample.databinding.ActivityMainBinding
-import com.example.chatappsample.domain.dto.User
-import com.example.chatappsample.presentation.view.adapter.MainUserAdapter
 import com.example.chatappsample.presentation.viewmodel.UserViewModel
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
+import com.google.android.material.navigation.NavigationBarView
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
-class MainActivity : AppCompatActivity() {
+class MainActivity : FragmentActivity() {
 
     val viewModel: UserViewModel by lazy { ViewModelProvider(this)[UserViewModel::class.java] }
     private lateinit var mBinding: ActivityMainBinding
-
-    private var userList = arrayListOf<User>()
-    private var currentUserId = ""
-    private lateinit var rvAdapter: MainUserAdapter
-
-    private val rvUserList by lazy { this.findViewById<RecyclerView>(R.id.rv_main_user_recyclerview) }
+    private val fragmentChattingList by lazy { layoutInflater.inflate(R.layout.fragment_chatting_list, null) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
 
         // Initialize Viewmodel Databinding & Lifecycle Setting
         mBinding = DataBindingUtil.setContentView(this, R.layout.activity_main)
         mBinding.viewModel = this@MainActivity.viewModel
         mBinding.lifecycleOwner = this@MainActivity
 
-        // Initialize recyclerview
-        viewModel.getCurrentUser()
-        viewModel.currentUser.observe(this) {
-            currentUserId = it!!.uid
-            rvAdapter.currentUserId = currentUserId
-        }
-        rvAdapter = MainUserAdapter(ctx = this@MainActivity, currentUserId = currentUserId, userList = userList)
-        rvUserList.adapter = rvAdapter
-        viewModel.allUsers.observe(this) {
-            rvAdapter.userList = it
-            rvAdapter.notifyDataSetChanged()
-        }
-        rvUserList.layoutManager = LinearLayoutManager(this)
+        mBinding.vpager2Main.adapter = PagerAdapter(this)
+
+        mBinding.bottomnaviMainNavigation.setOnItemSelectedListener(object: NavigationBarView.OnItemSelectedListener {
+            override fun onNavigationItemSelected(item: MenuItem): Boolean {
+                when (item.itemId) {
+                    R.id.menu_main_chatting_list -> {
+                        mBinding.vpager2Main.currentItem = 0
+                        println("유저목록 선택함")
+                        
+                        return true
+                    }
+                    else -> {
+                        return true
+                    }
+                }
+            }
+        })
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_main, menu)
         return super.onCreateOptionsMenu(menu)
     }
@@ -67,13 +62,29 @@ class MainActivity : AppCompatActivity() {
         when (item.itemId) {
             R.id.action_log_out -> {
                 viewModel.signOut()
+                viewModel.cancelAutoLogin()
                 finish()
-                val intent = Intent(this, LogInActivity::class.java)
+                val intent = Intent(this, LogInActivity::class.java).apply {
+                    putExtra("AutoLogin", false)
+                }
                 startActivity(intent)
                 return true
             }
             else -> {}
         }
         return super.onOptionsItemSelected(item)
+    }
+
+    inner class PagerAdapter(activity: FragmentActivity) : FragmentStateAdapter(activity) {
+        override fun getItemCount(): Int = 2
+
+        override fun createFragment(position: Int): Fragment {
+            return when (position%itemCount) {
+                0 -> { ChattingListFragment() }
+                1 -> { ChattingListFragment() }
+                else -> { ChattingListFragment() }
+            }
+        }
+
     }
 }

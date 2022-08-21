@@ -1,82 +1,211 @@
 package com.example.chatappsample.presentation.view.adapter
 
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.content.Context
+import android.graphics.Bitmap
+import android.net.Uri
+import android.view.*
+import android.widget.ImageView
+import androidx.appcompat.widget.AppCompatImageView
+import androidx.appcompat.widget.AppCompatTextView
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.MultiTransformation
+import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.load.resource.bitmap.CenterCrop
+import com.bumptech.glide.load.resource.bitmap.RoundedCorners
+import com.bumptech.glide.request.RequestOptions
 import com.example.chatappsample.R
 import com.example.chatappsample.domain.dto.Message
+import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.textview.MaterialTextView
+import com.google.firebase.storage.FirebaseStorage
 
 class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
-    RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+    ListAdapter<Message, RecyclerView.ViewHolder>(MessageDiffUtil()) {
 
+    // 리사이클러 뷰홀더 타입 지정
+    private val EMPTY_MESSAGE = -1
     private val SENT_MESSAGE = 0
     private val RECEIVED_MESSAGE = 1
-    private var sentMessageClickListener: MessageClickListener? = null
-    private var receivedMessageClickListener: MessageClickListener? = null
+    private val SENT_IMAGE = 2
+    private val RECEIVED_IMAGE = 3
+
+    private var onSentMessageClickListener: OnMessageClickListener? = null
+    private var onReceivedMessageClickListener: OnMessageClickListener? = null
+    private var onSentImageClickListener: OnImageClickListener? = null
+    private var onReceivedImageClickListener: OnImageClickListener? = null
+
+    private val imageList: MutableList<Uri?> = mutableListOf()
+
 
     inner class SentMessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val sentMessage: MaterialTextView = itemView.findViewById(R.id.tv_sent_message)
-        val sentTime: MaterialTextView = itemView.findViewById(R.id.tv_sent_message_time)
+        private val sentMessageTextView: MaterialTextView = itemView.findViewById(R.id.tv_sent_message)
+        private val sentTimeTextView: MaterialTextView = itemView.findViewById(R.id.tv_sent_message_time)
 
+        init {
+            sentMessageTextView.setOnClickListener {
+                if (adapterPosition != RecyclerView.NO_POSITION) onSentMessageClickListener?.onClick(it, adapterPosition)
+            }
+        }
+
+        fun bind(message: Message) {
+            sentMessageTextView.text = message.message
+            sentTimeTextView.text = message.sentTime
+        }
     }
 
     inner class ReceivedMessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val receivedMessage: MaterialTextView = itemView.findViewById(R.id.tv_received_message)
-        val receivedTime: MaterialTextView = itemView.findViewById(R.id.tv_received_message_time)
+        private val receivedMessageTextView: MaterialTextView = itemView.findViewById(R.id.tv_received_message)
+        private val receivedTimeTextView: MaterialTextView = itemView.findViewById(R.id.tv_received_message_time)
+
+        init {
+            receivedMessageTextView.setOnClickListener {
+                if (adapterPosition != RecyclerView.NO_POSITION) onReceivedMessageClickListener?.onClick(it, adapterPosition)
+            }
+        }
+
+        fun bind(message: Message) {
+            receivedMessageTextView.text = message.message
+            receivedTimeTextView.text = message.sentTime
+        }
+    }
+
+    inner class SentImageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val sentImageView: ShapeableImageView = itemView.findViewById(R.id.iv_sent_image)
+        private val sentTimeTextView: MaterialTextView = itemView.findViewById(R.id.tv_sent_image_time)
+
+        init {
+            sentImageView.setOnClickListener {
+                if (adapterPosition != RecyclerView.NO_POSITION) onSentImageClickListener?.onClick(it, adapterPosition)
+            }
+        }
+
+        fun bind(message: Message, imageUri: Uri?) {
+            if (imageUri != null) Glide.with(itemView.context)
+                .load(imageUri)
+                .into(sentImageView)
+            sentTimeTextView.text = message.sentTime
+        }
+    }
+
+    inner class ReceivedImageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val receivedImageView: ShapeableImageView = itemView.findViewById(R.id.iv_received_image)
+        private val receivedTimeTextView: MaterialTextView = itemView.findViewById(R.id.tv_received_image_time)
+
+        init {
+            receivedImageView.setOnClickListener {
+                if (adapterPosition != RecyclerView.NO_POSITION) onReceivedImageClickListener?.onClick(it, adapterPosition)
+            }
+        }
+
+        fun bind(message: Message, imageUri: Uri?) {
+            if (imageUri != null) Glide.with(itemView.context)
+                .load(imageUri)
+                .into(receivedImageView)
+            receivedTimeTextView.text = message.sentTime
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-
-        return if (viewType == SENT_MESSAGE) {
-            val itemView = LayoutInflater.from(parent.context).inflate(R.layout.relativelayout_sent_message, null)
-            SentMessageViewHolder(itemView = itemView)
-        } else {
-            val itemView = LayoutInflater.from(parent.context).inflate(R.layout.relativelayout_received_message, null)
-            ReceivedMessageViewHolder(itemView = itemView)
+        return when (viewType) {
+            EMPTY_MESSAGE, SENT_MESSAGE -> {
+                val itemView = LayoutInflater.from(parent.context)
+                    .inflate(R.layout.constraintlayout_sent_message, parent, false)
+                SentMessageViewHolder(itemView = itemView)
+            }
+            SENT_IMAGE -> {
+                val itemView = LayoutInflater.from(parent.context)
+                    .inflate(R.layout.constraintlayout_sent_image, parent, false)
+                SentImageViewHolder(itemView = itemView)
+            }
+            RECEIVED_MESSAGE -> {
+                val itemView = LayoutInflater.from(parent.context)
+                    .inflate(R.layout.constraintlayout_received_message, parent, false)
+                ReceivedMessageViewHolder(itemView = itemView)
+            }
+            else -> {
+                val itemView = LayoutInflater.from(parent.context)
+                    .inflate(R.layout.constraintlayout_received_image, parent, false)
+                ReceivedImageViewHolder(itemView = itemView)
+            }
         }
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if (holder.javaClass == SentMessageViewHolder::class.java) {
-            (holder as SentMessageViewHolder).apply {
-                sentMessage.text = messageList[position].message
-                sentTime.text = messageList[position].sentTime
-            }
+        if (messageList.isEmpty()) return
+        when (holder.javaClass) {
+            SentMessageViewHolder::class.java -> (holder as SentMessageViewHolder).bind(messageList[position])
+            SentImageViewHolder::class.java -> (holder as SentImageViewHolder).bind(messageList[position], imageList[position])
+            ReceivedMessageViewHolder::class.java -> (holder as ReceivedMessageViewHolder).bind(messageList[position])
+            ReceivedImageViewHolder::class.java -> (holder as ReceivedImageViewHolder).bind(messageList[position], imageList[position])
+        }
+    }
 
-            if (sentMessageClickListener != null) holder.itemView.setOnClickListener {
-                sentMessageClickListener!!.onClick(it, position)
-            }
-        } else {
-            (holder as ReceivedMessageViewHolder).apply {
-                receivedMessage.text = messageList[position].message
-                receivedTime.text = messageList[position].sentTime
-            }
+    fun addImageUriToList(index: Int, uri: Uri) {
+        this.imageList[index] = uri
+    }
 
-            if (receivedMessageClickListener != null) holder.itemView.setOnClickListener {
-                receivedMessageClickListener!!.onClick(it, position)
+    fun setUriListSize(size: Int) {
+        this.imageList.clear()
+        repeat(size) {
+            this.imageList.add(null)
+        }
+    }
+
+    override fun getItemViewType(position: Int): Int {
+        if (messageList.isEmpty()) return EMPTY_MESSAGE
+        val currentMessage = messageList[position]
+
+        return when (senderUID) {
+            currentMessage.senderId -> {
+                if (messageList[position].imageUri != "") SENT_IMAGE
+                else SENT_MESSAGE
+            }
+            else -> {
+                if (messageList[position].imageUri != "") RECEIVED_IMAGE
+                else RECEIVED_MESSAGE
             }
         }
     }
 
-    override fun getItemCount(): Int = messageList.size
-
-    override fun getItemViewType(position: Int): Int {
-        val currentMessage = messageList[position]
-
-        return if (senderUID == currentMessage.senderId) SENT_MESSAGE else RECEIVED_MESSAGE
+    fun setOnSentMessageClickListener(onMessageClickListener: OnMessageClickListener) {
+        this.onSentMessageClickListener = onMessageClickListener
     }
 
-    fun setOnSentMessageClickListener(messageClickListener: MessageClickListener) {
-        this.sentMessageClickListener = messageClickListener
+    fun setOnReceivedMessageClickListener(onMessageClickListener: OnMessageClickListener) {
+        this.onReceivedMessageClickListener = onMessageClickListener
     }
 
-    fun setOnReceivedMessageClickListener(messageClickListener: MessageClickListener) {
-        this.receivedMessageClickListener = messageClickListener
+    fun setOnSentImageClickListener(onImageClickListener: OnImageClickListener) {
+        this.onSentImageClickListener = onImageClickListener
     }
 
-    interface MessageClickListener {
+    fun setOnReceivedImageClickListener(onImageClickListener: OnImageClickListener) {
+        this.onReceivedImageClickListener = onImageClickListener
+    }
+
+    interface OnMessageClickListener {
         fun onClick(view: View, position: Int)
+    }
+
+    interface OnImageClickListener {
+        fun onClick(view: View, position: Int)
+    }
+
+    class MessageDiffUtil : DiffUtil.ItemCallback<Message>() {
+        override fun areItemsTheSame(oldItem: Message, newItem: Message): Boolean {
+            return oldItem.messageIndex == newItem.messageIndex
+        }
+
+        override fun areContentsTheSame(oldItem: Message, newItem: Message): Boolean {
+            return oldItem == newItem
+        }
+    }
+
+    override fun submitList(list: MutableList<Message>?) {
+        super.submitList(list)
+        if (list != messageList) messageList = list!!.toList()
     }
 }

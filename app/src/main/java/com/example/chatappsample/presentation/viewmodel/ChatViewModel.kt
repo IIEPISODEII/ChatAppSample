@@ -1,29 +1,31 @@
 package com.example.chatappsample.presentation.viewmodel
 
+import android.net.Uri
 import androidx.databinding.Bindable
 import androidx.databinding.Observable
 import androidx.databinding.PropertyChangeRegistry
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
+import com.example.chatappsample.domain.`interface`.OnFirebaseCommunicationListener
 import com.example.chatappsample.domain.`interface`.OnGetDataListener
 import com.example.chatappsample.domain.dto.Message
-import com.example.chatappsample.domain.dto.User
-import com.example.chatappsample.domain.repository.UserRepository
-import com.example.chatappsample.domain.usecase.GetCurrentUserUsecase
-import com.example.chatappsample.domain.usecase.GetReceivedMessageUsecase
-import com.example.chatappsample.domain.usecase.SendMessageUsecase
+import com.example.chatappsample.domain.usecase.*
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.DatabaseException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     private val sendMessageUsecase: SendMessageUsecase,
+    private val receiveAllMessagesUsecase: ReceiveAllMessagesUsecase,
     private val receivedMessageUsecase: GetReceivedMessageUsecase,
-    private val getCurrentUserUsecase: GetCurrentUserUsecase
+    private val uploadFileUsecase: UploadFileUsecase,
+    private val downloadFileUsecase: DownloadFileUsecase,
+    private val getLastMessageIndexUsecase: GetLastMessageIndexUsecase,
+    private val saveLastMessageIndexUsecase: SaveLastMessageIndexUsecase,
 ) : ViewModel(), Observable {
 
     @Bindable
@@ -32,41 +34,60 @@ class ChatViewModel @Inject constructor(
     fun sendMessage(
         message: Message,
         senderChatRoom: String,
-        receiverChatRoom: String
+        receiverChatRoom: String,
+        onFirebaseCommunicationListener: OnFirebaseCommunicationListener
     ): Boolean {
         return sendMessageUsecase.sendMessage(
             message = message,
             senderChatRoom = senderChatRoom,
-            receiverChatRoom = receiverChatRoom
+            receiverChatRoom = receiverChatRoom,
+            onFirebaseCommunicationListener = onFirebaseCommunicationListener
         )
     }
 
-
+    private val msgList = mutableListOf<Message>()
     private val _messagesList: MutableLiveData<List<Message>> = MutableLiveData()
     val messagesList: LiveData<List<Message>>
         get() = _messagesList
 
-    fun getReceivedMessage(chatRoom: String) {
-        val mListener = object: OnGetDataListener {
+    fun receiveAllMessages(chatRoom: String) {
+        val listener = object : OnGetDataListener {
             override fun onSuccess(dataSnapshot: DataSnapshot) {
-                val msgList = mutableListOf<Message>()
-                for (snapshot in dataSnapshot.children) {
-
-                    val message = snapshot.getValue(Message::class.java)!!
-                    msgList.add(message)
+                dataSnapshot.children.forEach {
+                    msgList.add(it.getValue(Message::class.java)!!)
                 }
-                _messagesList.value = msgList.toList()
+                _messagesList.postValue(msgList)
             }
 
             override fun onStart() {
+
             }
+
+            override fun <T> onFailure(error: T) {
+                if (error is DatabaseError) throw Exception(error.message)
+            }
+        }
+
+        receiveAllMessagesUsecase(chatRoom, listener)
+    }
+
+    private var queriesSize = 0
+    fun getReceivedMessage(chatRoom: String) {
+        queriesSize += 30
+        val mListener = object : OnGetDataListener {
+            override fun onSuccess(dataSnapshot: DataSnapshot) {
+                msgList.add(dataSnapshot.getValue(Message::class.java)!!)
+                _messagesList.postValue(msgList.toList())
+            }
+
+            override fun onStart() {}
 
             override fun <T> onFailure(error: T) {
                 if (error is DatabaseError) throw Exception(error.message)
             }
 
         }
-        receivedMessageUsecase.getReceivedMessage(chatRoom, mListener)
+        receivedMessageUsecase(chatRoom, queriesSize, mListener)
     }
 
 
@@ -78,5 +99,37 @@ class ChatViewModel @Inject constructor(
 
     override fun removeOnPropertyChangedCallback(callback: Observable.OnPropertyChangedCallback?) {
         callbacks.remove(callback)
+    }
+
+
+    private val _isOptionActivated = MutableLiveData(false)
+    val isOptionActivated: LiveData<Boolean>
+        get() = _isOptionActivated
+
+    fun activateOption(value: Boolean) {
+        _isOptionActivated.postValue(value)
+    }
+
+    fun getLastMessageIndex(chatRoom: String) = getLastMessageIndexUsecase(chatRoom)
+
+    fun saveLastMessageIndex(chatRoom: String, index: Int) =
+        saveLastMessageIndexUsecase(chatRoom, index)
+
+    fun uploadFile(
+        message: Message,
+        senderChatRoom: String,
+        receiverChatRoom: String,
+        onFirebaseCommunicationListener: OnFirebaseCommunicationListener
+    ) {
+        uploadFileUsecase(
+            message,
+            senderChatRoom,
+            receiverChatRoom,
+            onFirebaseCommunicationListener
+        )
+    }
+
+    fun downloadFile(uri: Uri, onFileDownloadListener: OnFileDownloadListener) {
+        downloadFileUsecase(uri, onFileDownloadListener)
     }
 }

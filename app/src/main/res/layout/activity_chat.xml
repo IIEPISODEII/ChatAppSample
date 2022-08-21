@@ -5,56 +5,140 @@
     tools:context=".presentation.view.ChatActivity">
 
     <data>
+
         <variable
             name="viewmodel"
             type="com.example.chatappsample.presentation.viewmodel.ChatViewModel" />
     </data>
-    
-    <androidx.constraintlayout.widget.ConstraintLayout 
+
+    <androidx.drawerlayout.widget.DrawerLayout
+        android:id="@+id/drawer_chat"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rv_chat_recyclerview"
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/constraintLayout"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            app:layout_constraintBottom_toTopOf="@+id/ll_chat_linearlayout"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:layout_height="match_parent">
 
-        <LinearLayout
-            android:id="@+id/ll_chat_linearlayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="10dp"
-            android:orientation="horizontal"
-            app:layout_constraintTop_toBottomOf="@id/rv_chat_recyclerview"
-            app:layout_constraintBottom_toBottomOf="parent"
-            android:layout_marginTop="10dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent">
+            <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/tlb_chat_toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/iv_chat_home"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_round_keyboard_backspace_24"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/tv_chat_toolbar_title"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:paddingHorizontal="16dp"
+                        android:text="USER NAME"
+                        android:textColor="@color/skyblue"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toEndOf="@id/iv_chat_home"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/iv_chat_menu"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="16dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_baseline_menu_24"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+            </com.google.android.material.appbar.MaterialToolbar>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_chat_recyclerview"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginBottom="8dp"
+                app:layout_constraintBottom_toTopOf="@id/imgbtn_add_new_item"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tlb_chat_toolbar" />
+
+            <ProgressBar
+                android:id="@+id/prgbar_chat_progressbar"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:indeterminateTint="@color/skyblue"
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="@id/rv_chat_recyclerview"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="@id/rv_chat_recyclerview" />
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/imgbtn_add_new_item"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_marginVertical="12dp"
+                android:layout_marginStart="8dp"
+                android:background="@color/transparent"
+                android:padding="8dp"
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_outline_image_24"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent" />
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/et_chat_messagebox"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="50dp"
-                android:layout_marginStart="10dp"
-                android:layout_weight="95"
+                android:layout_marginHorizontal="4dp"
                 android:background="@drawable/layout_messagebox_bg"
-                android:text="@={viewmodel.messageTxt}"
                 android:hint="Type a Message"
-                android:paddingHorizontal="15dp" />
+                android:paddingHorizontal="15dp"
+                android:text="@={viewmodel.messageTxt}"
+                app:layout_constraintEnd_toStartOf="@+id/imgbtn_send_message"
+                app:layout_constraintStart_toEndOf="@id/imgbtn_add_new_item"
+                app:layout_constraintTop_toTopOf="@id/imgbtn_add_new_item" />
 
-            <ImageButton
+            <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/imgbtn_send_message"
                 android:layout_width="50dp"
                 android:layout_height="50dp"
+                android:layout_marginEnd="8dp"
                 android:layout_weight="5"
                 android:background="@color/white"
-                android:padding="5dp"
-                android:scaleType="fitCenter"
-                android:src="@drawable/ic_baseline_send_24" />
-        </LinearLayout>
-    </androidx.constraintlayout.widget.ConstraintLayout>
+                android:padding="8dp"
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_baseline_send_24"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@id/et_chat_messagebox" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <com.google.android.material.navigation.NavigationView
+            android:id="@+id/drawer_chat_partition"
+            android:layout_width="240dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="end">
+        </com.google.android.material.navigation.NavigationView>
+    </androidx.drawerlayout.widget.DrawerLayout>
+
 </layout>

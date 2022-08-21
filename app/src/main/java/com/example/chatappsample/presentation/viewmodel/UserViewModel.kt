@@ -6,20 +6,18 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.chatappsample.domain.`interface`.OnGetDataListener
+import com.example.chatappsample.domain.`interface`.OnGetRegistrationListener
 import com.example.chatappsample.domain.dto.User
-import com.example.chatappsample.domain.repository.UserRepository
-import com.example.chatappsample.domain.usecase.GetAllUsersUsecase
-import com.example.chatappsample.domain.usecase.GetCurrentUserUsecase
-import com.example.chatappsample.domain.usecase.SignOutUsecase
-import com.example.chatappsample.domain.usecase.SignUpUsecase
+import com.example.chatappsample.domain.usecase.*
+import com.example.chatappsample.util.Resource
+import com.google.android.gms.tasks.Task
+import com.google.firebase.auth.AuthResult
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseException
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import java.lang.Exception
 import javax.inject.Inject
 
 
@@ -28,33 +26,24 @@ class UserViewModel @Inject constructor(
     private val getCurrentUserUsecase: GetCurrentUserUsecase,
     private val getAllUsersUsecase: GetAllUsersUsecase,
     private val signOutUsecase: SignOutUsecase,
-    private val signUpUsecase: SignUpUsecase
-    ): ViewModel() {
+    private val signUpUsecase: SignUpUsecase,
+    private val setAutoLoginCheckUsecase: SetAutoLoginCheckUsecase
+) : ViewModel() {
 
     private val _currentUser = MutableLiveData<User?>()
     val currentUser: LiveData<User?>
         get() = _currentUser
 
-    private val _allUsers = MutableLiveData<ArrayList<User>>()
-    val allUsers: LiveData<ArrayList<User>>
-        get() = _allUsers
-
-    private val _isSignedUp = MutableLiveData(false)
-    val isSignedUp: LiveData<Boolean>
-        get() = _isSignedUp
-
-
     fun getCurrentUser() {
-        getCurrentUserUsecase.getCurrentUser(object: OnGetDataListener {
+        getCurrentUserUsecase.getCurrentUser(object : OnGetDataListener {
             override fun onSuccess(dataSnapshot: DataSnapshot) {
-                val currentUser = dataSnapshot.getValue(User::class.java) ?: throw DatabaseException("NO USER")
+                val currentUser =
+                    dataSnapshot.getValue(User::class.java) ?: throw DatabaseException("NO USER")
                 getAllUsers(currentUserId = currentUser.uid)
                 _currentUser.postValue(currentUser)
             }
 
-            override fun onStart() {
-
-            }
+            override fun onStart() {}
 
             override fun <T> onFailure(error: T) {
                 if (error is DatabaseError) Log.e("UserViewModel", error.message)
@@ -63,9 +52,14 @@ class UserViewModel @Inject constructor(
         })
     }
 
+
+    private val _allUsers = MutableLiveData<ArrayList<User>>()
+    val allUsers: LiveData<ArrayList<User>>
+        get() = _allUsers
+
     fun getAllUsers(currentUserId: String) {
         viewModelScope.launch {
-            getAllUsersUsecase.getAllUsers(object: OnGetDataListener {
+            getAllUsersUsecase.getAllUsers(object : OnGetDataListener {
                 override fun onSuccess(dataSnapshot: DataSnapshot) {
                     val userList = arrayListOf<User>()
                     for (snapShot in dataSnapshot.children) {
@@ -79,9 +73,7 @@ class UserViewModel @Inject constructor(
                     _allUsers.postValue(userList)
                 }
 
-                override fun onStart() {
-
-                }
+                override fun onStart() {}
 
                 override fun <T> onFailure(error: T) {
                     if (error is DatabaseError) Log.e("UserViewModel", error.message)
@@ -91,13 +83,39 @@ class UserViewModel @Inject constructor(
         }
     }
 
+
+    private val _registrationStatus = MutableLiveData<Resource<AuthResult?>>()
+    val registrationStatus: LiveData<Resource<AuthResult?>>
+        get() = _registrationStatus
+
+    private val _isSignedUp = MutableLiveData(false)
+    val isSignedUp: LiveData<Boolean>
+        get() = _isSignedUp
+
     fun signOut() {
         if (signOutUsecase.signOut()) _currentUser.value = null
     }
 
     fun signUp(name: String, email: String, password: String) {
-        signUpUsecase.signUp(name, email, password)
+        signUpUsecase.signUp(name, email, password, object : OnGetRegistrationListener {
+            override fun onSuccess(task: Task<AuthResult>) {
+                _isSignedUp.postValue(true)
+                _registrationStatus.postValue(Resource.Success(task.result))
+            }
 
-        _isSignedUp.value = true
+            override fun onStart() {
+                _registrationStatus.postValue(Resource.Loading(null))
+            }
+
+            override fun <T> onFailure(error: T) {
+                if (error is Exception) Log.e("UserViewModel", error.message ?: "")
+                else return
+            }
+
+        })
+    }
+
+    fun cancelAutoLogin() {
+        setAutoLoginCheckUsecase(false)
     }
 }

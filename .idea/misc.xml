@@ -3,6 +3,13 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/drawable-v24/avd_anim (1).xml" value="0.331" />
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/drawable-v24/avd_anim.xml" value="0.331" />
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/drawable-v24/avd_anim_evolve.xml" value="0.2055" />
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/drawable-v24/avd_anim_rocover.xml" value="0.331" />
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/drawable/ic_add_new_icon.xml" value="0.331" />
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/drawable/ic_add_new_icon_45.xml" value="0.331" />
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/drawable/ic_outline_image_24.xml" value="0.193" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/drawable/layout_dialog_bg.xml" value="0.134" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/drawable/layout_messagebox_bg.xml" value="0.2875" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/drawable/layout_received_message_tv.xml" value="0.2875" />
@@ -12,19 +19,28 @@
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/drawable/layout_round_textview.xml" value="0.2875" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/drawable/layout_sent_message_tv.xml" value="0.2875" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/drawable/layout_user_rvitem.xml" value="0.134" />
-        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/activity_chat.xml" value="0.14422028353326063" />
-        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/activity_login.xml" value="0.1" />
-        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/activity_main.xml" value="0.18087855297157623" />
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/activity_chat.xml" value="0.18" />
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/activity_login.xml" value="0.33" />
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/activity_main.xml" value="0.1" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/activity_sign_up.xml" value="0.358695652173913" />
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/constraintlayout_received_image.xml" value="0.1" />
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/constraintlayout_received_message.xml" value="0.3619791666666667" />
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/constraintlayout_sent_image.xml" value="0.3619791666666667" />
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/constraintlayout_sent_message.xml" value="0.3619791666666667" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/content_main.xml" value="0.36216779572694113" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/dialog_authorization_check.xml" value="0.30973451327433627" />
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/fragment_chatting_list.xml" value="0.3609375" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/fragment_first.xml" value="0.358695652173913" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/fragment_second.xml" value="0.14722222222222223" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/recyclerview_user.xml" value="0.18385416666666668" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/relativelayout_message_script.xml" value="0.358695652173913" />
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/relativelayout_received_image.xml" value="0.22239583333333332" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/relativelayout_received_message.xml" value="0.358695652173913" />
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/relativelayout_sent_image.xml" value="0.25" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/relativelayout_sent_message.xml" value="0.33" />
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/menu/menu_chat.xml" value="0.18489583333333334" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/menu/menu_main.xml" value="0.1" />
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/menu/menu_main_bottomnavigation.xml" value="0.3609375" />
       </map>
     </option>
   </component>
