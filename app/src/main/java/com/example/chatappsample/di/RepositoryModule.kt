@@ -25,8 +25,8 @@ class RepositoryModule {
 
     @Singleton
     @Provides
-    fun provideUserRepository(firebaseDatabase: FirebaseDatabase, firebaseAuth: FirebaseAuth) : UserRepository {
-        return UserRepositoryImpl(firebaseDatabase, firebaseAuth)
+    fun provideUserRepository(firebaseDatabase: FirebaseDatabase, firebaseAuth: FirebaseAuth, firebaseStorage: FirebaseStorage) : UserRepository {
+        return UserRepositoryImpl(firebaseDatabase, firebaseAuth, firebaseStorage)
     }
 
     @Singleton

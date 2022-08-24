@@ -1,28 +1,36 @@
 package com.example.chatappsample.presentation.view
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import android.view.WindowManager
-import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.viewpager2.adapter.FragmentStateAdapter
+import com.bumptech.glide.Glide
 import com.example.chatappsample.R
 import com.example.chatappsample.databinding.ActivityMainBinding
+import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
+import com.example.chatappsample.domain.dto.User
 import com.example.chatappsample.presentation.viewmodel.UserViewModel
+import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.navigation.NavigationBarView
 import dagger.hilt.android.AndroidEntryPoint
+import java.lang.Exception
 
 @AndroidEntryPoint
 class MainActivity : FragmentActivity() {
 
     val viewModel: UserViewModel by lazy { ViewModelProvider(this)[UserViewModel::class.java] }
     private lateinit var mBinding: ActivityMainBinding
-    private val fragmentChattingList by lazy { layoutInflater.inflate(R.layout.fragment_chatting_list, null) }
+    private var currentUser: User? = null
+    private val userListFragment = UserListFragment()
+    private val mypageFragment = MypageFragment()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,17 +43,40 @@ class MainActivity : FragmentActivity() {
         mBinding.lifecycleOwner = this@MainActivity
 
         mBinding.vpager2Main.adapter = PagerAdapter(this)
+        viewModel.currentUser.observe(this) {
+            if (currentUser?.profileImage != it?.profileImage) {
+                viewModel.downloadProfileImage(it!!, object: OnFileDownloadListener {
+
+                    override fun onSuccess(uri: Uri) {
+                        mypageFragment.setOnGetUserProfile(object: MypageFragment.OnGetUserProfileListener {
+                            override fun setOnGetUserProfileListener(imageView: ShapeableImageView) {
+                                Glide
+                                    .with(this@MainActivity)
+                                    .load(uri)
+                                    .into(imageView)
+                            }
+                        })
+                    }
+
+                    override fun onFailure(e: Exception) {
+
+                    }
+                })
+            }
+
+            currentUser = it!!
+        }
 
         mBinding.bottomnaviMainNavigation.setOnItemSelectedListener(object: NavigationBarView.OnItemSelectedListener {
             override fun onNavigationItemSelected(item: MenuItem): Boolean {
                 when (item.itemId) {
                     R.id.menu_main_chatting_list -> {
                         mBinding.vpager2Main.currentItem = 0
-                        println("유저목록 선택함")
-                        
+
                         return true
                     }
                     else -> {
+                        mBinding.vpager2Main.currentItem = 1
                         return true
                     }
                 }
@@ -80,9 +111,8 @@ class MainActivity : FragmentActivity() {
 
         override fun createFragment(position: Int): Fragment {
             return when (position%itemCount) {
-                0 -> { ChattingListFragment() }
-                1 -> { ChattingListFragment() }
-                else -> { ChattingListFragment() }
+                0 -> { userListFragment }
+                else -> { mypageFragment }
             }
         }
 

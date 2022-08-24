@@ -10,7 +10,7 @@ import javax.inject.Inject
 
 class GetAllUsersUsecase @Inject constructor(private val userRepository: UserRepository) {
 
-    fun getAllUsers(listener: OnGetDataListener) {
+    operator fun invoke(listener: OnGetDataListener) {
         userRepository.getAllUsers(listener)
     }
 

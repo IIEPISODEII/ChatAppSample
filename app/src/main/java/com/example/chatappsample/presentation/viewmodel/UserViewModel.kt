@@ -5,6 +5,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
 import com.example.chatappsample.domain.`interface`.OnGetDataListener
 import com.example.chatappsample.domain.`interface`.OnGetRegistrationListener
 import com.example.chatappsample.domain.dto.User
@@ -27,14 +28,16 @@ class UserViewModel @Inject constructor(
     private val getAllUsersUsecase: GetAllUsersUsecase,
     private val signOutUsecase: SignOutUsecase,
     private val signUpUsecase: SignUpUsecase,
-    private val setAutoLoginCheckUsecase: SetAutoLoginCheckUsecase
+    private val setAutoLoginCheckUsecase: SetAutoLoginCheckUsecase,
+    private val updateCurrentUserUsecase: UpdateCurrentUserUsercase,
+    private val downloadProfileImageUsecase: DownloadProfileImageUsecase
 ) : ViewModel() {
 
     private val _currentUser = MutableLiveData<User?>()
     val currentUser: LiveData<User?>
         get() = _currentUser
 
-    fun getCurrentUser() {
+    fun getCurrentUserInformation() {
         getCurrentUserUsecase.getCurrentUser(object : OnGetDataListener {
             override fun onSuccess(dataSnapshot: DataSnapshot) {
                 val currentUser =
@@ -59,7 +62,7 @@ class UserViewModel @Inject constructor(
 
     fun getAllUsers(currentUserId: String) {
         viewModelScope.launch {
-            getAllUsersUsecase.getAllUsers(object : OnGetDataListener {
+            getAllUsersUsecase(object : OnGetDataListener {
                 override fun onSuccess(dataSnapshot: DataSnapshot) {
                     val userList = arrayListOf<User>()
                     for (snapShot in dataSnapshot.children) {
@@ -117,5 +120,13 @@ class UserViewModel @Inject constructor(
 
     fun cancelAutoLogin() {
         setAutoLoginCheckUsecase(false)
+    }
+
+    fun updateCurrentUser(user: User) {
+        updateCurrentUserUsecase.invoke(user)
+    }
+
+    fun downloadProfileImage(user: User, onFileDownloadListener: OnFileDownloadListener) {
+        downloadProfileImageUsecase(user, onFileDownloadListener)
     }
 }
