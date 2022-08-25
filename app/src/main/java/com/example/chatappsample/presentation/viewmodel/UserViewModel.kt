@@ -129,4 +129,12 @@ class UserViewModel @Inject constructor(
     fun downloadProfileImage(user: User, onFileDownloadListener: OnFileDownloadListener) {
         downloadProfileImageUsecase(user, onFileDownloadListener)
     }
+
+    private val _isProfileEditMode = MutableLiveData(false)
+    val isProfileEditMode: LiveData<Boolean>
+        get() = _isProfileEditMode
+
+    fun toggleProfileEditMode(mode: Boolean) {
+        _isProfileEditMode.postValue(mode)
+    }
 }

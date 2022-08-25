@@ -2,14 +2,15 @@
 
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
-    
+
     <data>
+
         <variable
             name="viewModel"
             type="com.example.chatappsample.presentation.viewmodel.UserViewModel" />
     </data>
 
-    <ScrollView 
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:padding="16dp">
@@ -49,8 +50,50 @@
                         android:text="@{viewModel.currentUser.name}"
                         android:textSize="20sp"
                         android:textStyle="bold"
+                        app:isVisible="@{!viewModel.isProfileEditMode}"
                         app:layout_constraintBottom_toBottomOf="@id/iv_my_page_user_profile_image"
                         app:layout_constraintStart_toEndOf="@id/iv_my_page_user_profile_image"
+                        app:layout_constraintTop_toTopOf="@id/iv_my_page_user_profile_image" />
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/tv_my_page_user_profile_name_modify"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:hint="닉네임을 수정해주세요"
+                        android:maxLines="1"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        app:isVisible="@{viewModel.isProfileEditMode}"
+                        android:layout_marginEnd="8dp"
+                        app:layout_constraintBottom_toBottomOf="@id/iv_my_page_user_profile_image"
+                        app:layout_constraintEnd_toStartOf="@id/btn_my_page_user_profile_edit_save"
+                        app:layout_constraintStart_toEndOf="@id/iv_my_page_user_profile_image"
+                        app:layout_constraintTop_toTopOf="@id/iv_my_page_user_profile_image" />
+
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/iv_my_page_user_profile_edit"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_marginEnd="20dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_baseline_mode_edit_24"
+                        app:isVisible="@{!viewModel.isProfileEditMode}"
+                        app:layout_constraintBottom_toBottomOf="@id/iv_my_page_user_profile_image"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="@id/iv_my_page_user_profile_image" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_my_page_user_profile_edit_save"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="20dp"
+                        android:text="완료"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        app:isVisible="@{viewModel.isProfileEditMode}"
+                        app:layout_constraintBottom_toBottomOf="@id/iv_my_page_user_profile_image"
+                        app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="@id/iv_my_page_user_profile_image" />
 
                 </androidx.constraintlayout.widget.ConstraintLayout>

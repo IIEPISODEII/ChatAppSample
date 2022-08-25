@@ -29,6 +29,17 @@ class MypageFragment : Fragment() {
         mBinding.viewModel = viewModel
 
         viewModel.currentUser.observe(this.viewLifecycleOwner) {}
+        viewModel.isProfileEditMode.observe(this.viewLifecycleOwner) {}
+
+        mBinding.btnMyPageUserProfileEditSave.setOnClickListener {
+            viewModel.toggleProfileEditMode(false)
+            mBinding.root.requestFocus()
+        }
+        mBinding.ivMyPageUserProfileEdit.setOnClickListener {
+            viewModel.toggleProfileEditMode(true)
+            mBinding.tvMyPageUserProfileNameModify.requestFocus()
+
+        }
         return mBinding.root
     }
 
