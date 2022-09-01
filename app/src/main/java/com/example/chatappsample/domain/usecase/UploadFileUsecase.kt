@@ -8,7 +8,6 @@ import javax.inject.Inject
 class UploadFileUsecase @Inject constructor(private val chatRepository: ChatRepository) {
 
     operator fun invoke(message: Message, senderChatRoom: String, receiverChatRoom: String, onFirebaseCommunicationListener: OnFirebaseCommunicationListener) {
-
         chatRepository.uploadFile(message, senderChatRoom, receiverChatRoom, onFirebaseCommunicationListener)
     }
 }

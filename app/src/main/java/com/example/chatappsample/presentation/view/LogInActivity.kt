@@ -32,15 +32,6 @@ class LogInActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        if (sharedPreferenceRepo.isAutoLoginChecked()) {
-            val email = sharedPreferenceRepo.getEmailAddress()
-            val password = sharedPreferenceRepo.getPassword()
-
-            login(email, password)
-            Toast.makeText(this, "Auto-Logined", Toast.LENGTH_SHORT).show()
-
-        }
         setContentView(R.layout.activity_login)
 
         signupButton.setOnClickListener {
@@ -72,6 +63,19 @@ class LogInActivity : AppCompatActivity() {
             }
             login(email, password)
         }
+    }
+
+    override fun onResume() {
+
+        if (sharedPreferenceRepo.isAutoLoginChecked()) {
+            val email = sharedPreferenceRepo.getEmailAddress()
+            val password = sharedPreferenceRepo.getPassword()
+
+            login(email, password)
+            Toast.makeText(this, "Auto-Logined", Toast.LENGTH_SHORT).show()
+        }
+
+        super.onResume()
     }
 
     private fun login(email: String, password: String) {

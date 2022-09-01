@@ -1,8 +1,13 @@
 package com.example.chatappsample.presentation.view
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.InputFilter
+import android.text.TextWatcher
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.widget.addTextChangedListener
+import androidx.core.widget.doOnTextChanged
 import androidx.lifecycle.ViewModelProvider
 import com.example.chatappsample.R
 import com.example.chatappsample.presentation.viewmodel.UserViewModel
@@ -46,15 +51,20 @@ class SignUpActivity : AppCompatActivity() {
             val password = passwordEditText.text.toString()
 
             if (name.isEmpty()) {
-                Toast.makeText(this, "Please input your name.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "닉네임을 입력해주세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
+            if (name.length !in 5..10 || !name.contains("[A-Za-z0-9]".toRegex())) {
+                Toast.makeText(this, "닉네임은 영문/숫자를 5~10자리로 조합해주세요.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
             if (email.isEmpty()) {
-                Toast.makeText(this, "Please input your e-mail.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "메일주소를 입력해주세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             if (password.isEmpty()) {
-                Toast.makeText(this, "Please input password.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "비밀번호를 입력해주세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 

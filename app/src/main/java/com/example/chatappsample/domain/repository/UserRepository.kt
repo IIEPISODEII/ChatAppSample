@@ -20,5 +20,5 @@ interface UserRepository {
 
     fun updateCurrentUser(user: User)
 
-    fun downloadProfileImage(user: User, onFileDownloadListener: OnFileDownloadListener)
+    fun downloadProfileImage(userID: String, onFileDownloadListener: OnFileDownloadListener)
 }

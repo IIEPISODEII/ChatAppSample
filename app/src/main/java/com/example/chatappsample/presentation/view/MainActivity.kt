@@ -44,8 +44,8 @@ class MainActivity : FragmentActivity() {
 
         mBinding.vpager2Main.adapter = PagerAdapter(this)
         viewModel.currentUser.observe(this) {
-            if (currentUser?.profileImage != it?.profileImage) {
-                viewModel.downloadProfileImage(it!!, object: OnFileDownloadListener {
+            if (it != null && currentUser?.profileImage != it.profileImage) {
+                viewModel.downloadProfileImage(it, object: OnFileDownloadListener {
 
                     override fun onSuccess(uri: Uri) {
                         mypageFragment.setOnGetUserProfile(object: MypageFragment.OnGetUserProfileListener {
@@ -64,7 +64,7 @@ class MainActivity : FragmentActivity() {
                 })
             }
 
-            currentUser = it!!
+            if (it != null) currentUser = it
         }
 
         mBinding.bottomnaviMainNavigation.setOnItemSelectedListener(object: NavigationBarView.OnItemSelectedListener {

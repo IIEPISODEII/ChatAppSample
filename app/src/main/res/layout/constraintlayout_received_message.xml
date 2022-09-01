@@ -5,17 +5,15 @@
     android:layout_height="wrap_content"
     android:paddingVertical="5dp">
 
-    <com.google.android.material.textview.MaterialTextView
-        android:id="@+id/tv_received_message_time"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:paddingHorizontal="15dp"
-        android:paddingVertical="5dp"
-        android:text="This is received time"
-        android:textColor="#7F7F7F"
-        android:textSize="12sp"
-        app:layout_constraintBottom_toBottomOf="@id/tv_received_message"
-        app:layout_constraintStart_toEndOf="@id/tv_received_message" />
+    <com.google.android.material.imageview.ShapeableImageView
+        android:id="@+id/iv_received_message_user_profile"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/ic_baseline_person_24"
+        android:layout_marginStart="10dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"/>
 
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/tv_received_message"
@@ -32,7 +30,19 @@
         android:textColor="@color/black"
         android:textSize="16sp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintStart_toEndOf="@id/iv_received_message_user_profile"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/tv_received_message_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="15dp"
+        android:paddingVertical="5dp"
+        android:text="This is received time"
+        android:textColor="#7F7F7F"
+        android:textSize="12dp"
+        app:layout_constraintBottom_toBottomOf="@id/tv_received_message"
+        app:layout_constraintStart_toEndOf="@id/tv_received_message" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

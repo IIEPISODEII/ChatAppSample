@@ -19,11 +19,13 @@
 
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/iv_sent_image"
+        style="@style/ShapeAppearanceOverlay.App.RoundCorner"
         android:layout_width="200dp"
         android:layout_height="wrap_content"
         android:layout_marginEnd="10dp"
-        app:layout_constraintCircleRadius="5dp"
+        android:src="@drawable/ic_outline_image_24"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintCircleRadius="5dp"
         app:layout_constraintEnd_toEndOf="parent" />
 
 

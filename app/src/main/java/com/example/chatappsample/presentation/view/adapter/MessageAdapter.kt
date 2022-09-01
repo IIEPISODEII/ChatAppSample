@@ -1,26 +1,19 @@
 package com.example.chatappsample.presentation.view.adapter
 
-import android.content.Context
-import android.graphics.Bitmap
 import android.net.Uri
 import android.view.*
-import android.widget.ImageView
-import androidx.appcompat.widget.AppCompatImageView
-import androidx.appcompat.widget.AppCompatTextView
+import androidx.core.net.toUri
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.MultiTransformation
-import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.bumptech.glide.load.resource.bitmap.CenterCrop
+import com.bumptech.glide.load.Transformation
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners
-import com.bumptech.glide.request.RequestOptions
 import com.example.chatappsample.R
 import com.example.chatappsample.domain.dto.Message
 import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.textview.MaterialTextView
-import com.google.firebase.storage.FirebaseStorage
 
 class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
     ListAdapter<Message, RecyclerView.ViewHolder>(MessageDiffUtil()) {
@@ -38,7 +31,7 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
     private var onReceivedImageClickListener: OnImageClickListener? = null
 
     private val imageList: MutableList<Uri?> = mutableListOf()
-
+    private var profileUri: Uri = "".toUri()
 
     inner class SentMessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val sentMessageTextView: MaterialTextView = itemView.findViewById(R.id.tv_sent_message)
@@ -59,6 +52,7 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
     inner class ReceivedMessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val receivedMessageTextView: MaterialTextView = itemView.findViewById(R.id.tv_received_message)
         private val receivedTimeTextView: MaterialTextView = itemView.findViewById(R.id.tv_received_message_time)
+        private val receivedMessageUserProfile: ShapeableImageView = itemView.findViewById(R.id.iv_received_message_user_profile)
 
         init {
             receivedMessageTextView.setOnClickListener {
@@ -69,6 +63,10 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
         fun bind(message: Message) {
             receivedMessageTextView.text = message.message
             receivedTimeTextView.text = message.sentTime
+
+            if (profileUri != "".toUri()) Glide.with(itemView.context)
+                .load(profileUri)
+                .into(receivedMessageUserProfile)
         }
     }
 
@@ -85,6 +83,10 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
         fun bind(message: Message, imageUri: Uri?) {
             if (imageUri != null) Glide.with(itemView.context)
                 .load(imageUri)
+                .transform(MultiTransformation(RoundedCorners(10)))
+                .placeholder(R.drawable.ic_outline_image_24)
+                .error(R.drawable.ic_outline_image_not_supported_24)
+                .skipMemoryCache(false)
                 .into(sentImageView)
             sentTimeTextView.text = message.sentTime
         }
@@ -93,6 +95,7 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
     inner class ReceivedImageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val receivedImageView: ShapeableImageView = itemView.findViewById(R.id.iv_received_image)
         private val receivedTimeTextView: MaterialTextView = itemView.findViewById(R.id.tv_received_image_time)
+        private val receivedImageUserProfile: ShapeableImageView = itemView.findViewById(R.id.iv_received_image_user_profile)
 
         init {
             receivedImageView.setOnClickListener {
@@ -103,8 +106,16 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
         fun bind(message: Message, imageUri: Uri?) {
             if (imageUri != null) Glide.with(itemView.context)
                 .load(imageUri)
+                .transform(MultiTransformation(RoundedCorners(10)))
+                .placeholder(R.drawable.ic_outline_image_24)
+                .error(R.drawable.ic_outline_image_not_supported_24)
+                .skipMemoryCache(false)
                 .into(receivedImageView)
             receivedTimeTextView.text = message.sentTime
+
+            if (profileUri != "".toUri()) Glide.with(itemView.context)
+                .load(profileUri)
+                .into(receivedImageUserProfile)
         }
     }
 
@@ -207,5 +218,10 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
     override fun submitList(list: MutableList<Message>?) {
         super.submitList(list)
         if (list != messageList) messageList = list!!.toList()
+    }
+
+    fun setImageProfileUri(uri: Uri) {
+        this.profileUri = uri
+        notifyDataSetChanged()
     }
 }

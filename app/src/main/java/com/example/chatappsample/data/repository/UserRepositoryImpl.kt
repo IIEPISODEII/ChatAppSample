@@ -108,10 +108,10 @@ class UserRepositoryImpl @Inject constructor(
             }
     }
 
-    override fun downloadProfileImage(user: User, onFileDownloadListener: OnFileDownloadListener) {
+    override fun downloadProfileImage(userID: String, onFileDownloadListener: OnFileDownloadListener) {
 
         firebaseStorage.reference
-            .child("profileImages/${user.uid}")
+            .child("profileImages/$userID")
             .downloadUrl
             .addOnSuccessListener {
                 onFileDownloadListener.onSuccess(it)

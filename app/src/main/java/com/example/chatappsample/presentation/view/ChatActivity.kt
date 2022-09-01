@@ -79,10 +79,10 @@ class ChatActivity : AppCompatActivity() {
         toolbarHomeButton.setOnClickListener { finish() }
         toolbarMenuButton.setOnClickListener { openDrawer() }
 
-        val receiverUID = intent.getStringExtra(OTHER_UID)
-        val senderUID = intent.getStringExtra(CURRENT_UID)
-        senderRoom = receiverUID + senderUID
-        receiverRoom = senderUID + receiverUID
+        val otherID = intent.getStringExtra(OTHER_UID)
+        val myID = intent.getStringExtra(CURRENT_UID)
+        senderRoom = otherID + myID
+        receiverRoom = myID + otherID
 
         chatViewModel.getReceivedMessage(receiverRoom!!)
         chatViewModel.messageTxt.observe(this) { messageText = it }
@@ -104,7 +104,7 @@ class ChatActivity : AppCompatActivity() {
                             messageIndex = index,
                             message = "사진",
                             imageUri = selectedImageUri.toString(),
-                            senderId = senderUID!!,
+                            senderId = myID!!,
                             sentTime = sdf
                         )
                         chatViewModel.uploadFile(message, senderRoom!!, receiverRoom!!, onImageSendListener)
@@ -118,7 +118,7 @@ class ChatActivity : AppCompatActivity() {
                                         messageIndex = index,
                                         message = "사진",
                                         imageUri = selectedImageUri.toString(),
-                                        senderId = senderUID!!,
+                                        senderId = myID!!,
                                         sentTime = sdf
                                     )
                                     chatViewModel.uploadFile(
@@ -157,7 +157,7 @@ class ChatActivity : AppCompatActivity() {
         }
 
         // 리사이클러뷰에 데이터 추가
-        messageAdapter = MessageAdapter(messageList = listOf(), senderUID = senderUID ?: "")
+        messageAdapter = MessageAdapter(messageList = listOf(), senderUID = myID ?: "")
         val llm = LinearLayoutManager(this@ChatActivity)
         chattingRecyclerView.apply {
             adapter = messageAdapter
@@ -175,6 +175,17 @@ class ChatActivity : AppCompatActivity() {
             })
             setItemViewCacheSize(15)
         }
+
+        // 상대방 프로필 이미지 다운로드
+        chatViewModel.downloadProfileImage(otherID!!, object: OnFileDownloadListener {
+            override fun onSuccess(uri: Uri) {
+                messageAdapter.setImageProfileUri(uri)
+            }
+
+            override fun onFailure(e: Exception) {
+                e.printStackTrace()
+            }
+        })
 
         // 채팅 목록 동기화
         chatViewModel.messagesList.observe(this@ChatActivity) { list ->
@@ -197,14 +208,13 @@ class ChatActivity : AppCompatActivity() {
                         }
 
                         override fun onFailure(e: Exception) {
-                            Toast.makeText(this@ChatActivity, "이미지를 불러오지 못했습니다.", Toast.LENGTH_SHORT).show()
                             e.printStackTrace()
                         }
 
                     })
                 }
             }
-            println("list: $list")
+
             messageAdapter.submitList(list.toMutableList())
 
             if (firstCreation) chattingRecyclerView.scrollToPosition(messageAdapter.messageList.lastIndex)
@@ -242,7 +252,7 @@ class ChatActivity : AppCompatActivity() {
             val messageObject = Message(
                 messageIndex = chatViewModel.getLastMessageIndex(senderRoom!!)+1,
                 message = messageText,
-                senderId = senderUID ?: "",
+                senderId = myID ?: "",
                 sentTime = sdf
             )
 

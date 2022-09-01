@@ -18,7 +18,7 @@
         android:theme="@style/Theme.ChatAppSample"
         tools:targetApi="31">
         <activity
-            android:name=".presentation.view.LogInActivity"
+            android:name=".presentation.view.SplashActivity"
             android:exported="true"
             android:theme="@style/Theme.ChatAppSample">
             <intent-filter>
@@ -27,6 +27,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".presentation.view.LogInActivity"
+            android:exported="true"/>
         <activity
             android:name=".presentation.view.SignUpActivity"
             android:exported="true"/>

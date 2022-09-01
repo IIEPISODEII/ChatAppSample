@@ -11,6 +11,7 @@ import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
 import com.example.chatappsample.domain.`interface`.OnFirebaseCommunicationListener
 import com.example.chatappsample.domain.`interface`.OnGetDataListener
 import com.example.chatappsample.domain.dto.Message
+import com.example.chatappsample.domain.dto.User
 import com.example.chatappsample.domain.usecase.*
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -26,6 +27,7 @@ class ChatViewModel @Inject constructor(
     private val downloadFileUsecase: DownloadFileUsecase,
     private val getLastMessageIndexUsecase: GetLastMessageIndexUsecase,
     private val saveLastMessageIndexUsecase: SaveLastMessageIndexUsecase,
+    private val downloadProfileImageUsecase: DownloadProfileImageUsecase
 ) : ViewModel(), Observable {
 
     @Bindable
@@ -131,5 +133,9 @@ class ChatViewModel @Inject constructor(
 
     fun downloadFile(uri: Uri, onFileDownloadListener: OnFileDownloadListener) {
         downloadFileUsecase(uri, onFileDownloadListener)
+    }
+
+    fun downloadProfileImage(userID: String, onFileDownloadListener: OnFileDownloadListener) {
+        downloadProfileImageUsecase.downloadProfileImage(userID, onFileDownloadListener)
     }
 }

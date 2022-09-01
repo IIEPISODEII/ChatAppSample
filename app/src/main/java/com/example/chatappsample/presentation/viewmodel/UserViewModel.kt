@@ -40,10 +40,11 @@ class UserViewModel @Inject constructor(
     fun getCurrentUserInformation() {
         getCurrentUserUsecase.getCurrentUser(object : OnGetDataListener {
             override fun onSuccess(dataSnapshot: DataSnapshot) {
-                val currentUser =
-                    dataSnapshot.getValue(User::class.java) ?: throw DatabaseException("NO USER")
-                getAllUsers(currentUserId = currentUser.uid)
-                _currentUser.postValue(currentUser)
+                val user =
+                    dataSnapshot.getValue(User::class.java) ?: User()
+                if (user.uid == "") return
+                getAllUsers(currentUserId = user.uid)
+                _currentUser.postValue(user)
             }
 
             override fun onStart() {}
@@ -127,7 +128,7 @@ class UserViewModel @Inject constructor(
     }
 
     fun downloadProfileImage(user: User, onFileDownloadListener: OnFileDownloadListener) {
-        downloadProfileImageUsecase(user, onFileDownloadListener)
+        downloadProfileImageUsecase.downloadProfileImage(user.uid, onFileDownloadListener)
     }
 
     private val _isProfileEditMode = MutableLiveData(false)
