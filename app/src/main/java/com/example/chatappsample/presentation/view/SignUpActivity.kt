@@ -3,7 +3,9 @@ package com.example.chatappsample.presentation.view
 import android.os.Bundle
 import android.text.Editable
 import android.text.InputFilter
+import android.text.Spanned
 import android.text.TextWatcher
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
@@ -14,6 +16,7 @@ import com.example.chatappsample.presentation.viewmodel.UserViewModel
 import com.example.chatappsample.util.Resource
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textview.MaterialTextView
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -24,7 +27,11 @@ class SignUpActivity : AppCompatActivity() {
     private val nameEditText by lazy { this.findViewById<TextInputEditText>(R.id.et_signup_name) }
     private val emailEditText by lazy { this.findViewById<TextInputEditText>(R.id.et_signup_e_mail) }
     private val passwordEditText by lazy { this.findViewById<TextInputEditText>(R.id.et_signup_password) }
+    private val passwordCheckEditText by lazy { this.findViewById<TextInputEditText>(R.id.et_signup_password_check) }
     private val signupButton by lazy { this.findViewById<MaterialButton>(R.id.btn_signup_sign_up) }
+    private val passwordCheckRulesTextView by lazy { this.findViewById<MaterialTextView>(R.id.tv_signup_password_check_rules) }
+
+    private val passwordPattern = "^[a-zA-Z0-9]".toRegex()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,17 +52,20 @@ class SignUpActivity : AppCompatActivity() {
             }
         }
 
+        nameEditText.filters = arrayOf(LetterDigitsInputFilter(), CharLengthInputFilter(10))
+
+        passwordCheckEditText.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) passwordCheckRulesTextView.visibility = View.INVISIBLE
+        }
+
         signupButton.setOnClickListener {
             val name = nameEditText.text.toString()
             val email = emailEditText.text.toString()
             val password = passwordEditText.text.toString()
+            val passwordChecker = passwordCheckEditText.text.toString()
 
             if (name.isEmpty()) {
                 Toast.makeText(this, "닉네임을 입력해주세요.", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            if (name.length !in 5..10 || !name.contains("[A-Za-z0-9]".toRegex())) {
-                Toast.makeText(this, "닉네임은 영문/숫자를 5~10자리로 조합해주세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -63,12 +73,52 @@ class SignUpActivity : AppCompatActivity() {
                 Toast.makeText(this, "메일주소를 입력해주세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
+
             if (password.isEmpty()) {
                 Toast.makeText(this, "비밀번호를 입력해주세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
+            if (!passwordPattern.matches(password) || password.length !in 8..16) {
+                Toast.makeText(this, resources.getText(R.string.password_rules), Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            if (password != passwordChecker) {
+                passwordCheckRulesTextView.visibility = View.VISIBLE
+                return@setOnClickListener
+            }
 
             viewModel.signUp(name, email, password)
+        }
+    }
+
+    private class LetterDigitsInputFilter: InputFilter {
+        override fun filter(
+            source: CharSequence?,
+            start: Int,
+            end: Int,
+            dest: Spanned?,
+            dstart: Int,
+            dend: Int
+        ): CharSequence {
+            for (i in start until end) {
+                 if (!Character.isLetterOrDigit(source!![i])) return ""
+            }
+            return source!!
+        }
+    }
+
+    private class CharLengthInputFilter(private val endLimit: Int): InputFilter {
+        override fun filter(
+            source: CharSequence?,
+            start: Int,
+            end: Int,
+            dest: Spanned?,
+            dstart: Int,
+            dend: Int
+        ): CharSequence {
+            return if (source!!.length + dend > endLimit) ""
+            else source
         }
     }
 }

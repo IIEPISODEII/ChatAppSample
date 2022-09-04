@@ -108,11 +108,13 @@ class UserRepositoryImpl @Inject constructor(
             }
     }
 
+    private val TEN_MEGABYTE = 10L*1024L*1024L
+
     override fun downloadProfileImage(userID: String, onFileDownloadListener: OnFileDownloadListener) {
 
         firebaseStorage.reference
             .child("profileImages/$userID")
-            .downloadUrl
+            .getBytes(TEN_MEGABYTE)
             .addOnSuccessListener {
                 onFileDownloadListener.onSuccess(it)
             }

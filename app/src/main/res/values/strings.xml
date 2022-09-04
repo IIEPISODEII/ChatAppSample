@@ -4,11 +4,11 @@
 
     <string name="e_mail_address">이메일 주소</string>
     <string name="password">비밀번호</string>
-    <string name="password_rules">*비밀번호는 <b>영문/숫자를 8~16자리</b>로 조합해주세요.</string>
+    <string name="password_rules">*비밀번호는 <b>영문/숫자를 8~16자리</b>로 조합해주세요.\n대/소문자를 구별합니다.</string>
     <string name="login">로그인</string>
     <string name="sign_up"><b>새 계정</b> 생성</string>
     <string name="name">닉네임</string>
-    <string name="name_rules">*닉네임은 <b>영문/숫자를 5~10자리</b>로 조합해주세요.</string>
+    <string name="name_rules">*닉네임은 <b>한글/영문/숫자를 5~10자리</b>로 조합해주세요.</string>
     <string name="authorization_failed">이메일 주소나 비밀번호를 다시 입력해주세요.</string>
     <string name="auto_login">자동 로그인</string>
     <string name="password_check">비밀번호 확인</string>

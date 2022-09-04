@@ -160,6 +160,8 @@ class ChatRepositoryImpl @Inject constructor(
             }
     }
 
+    private val TEN_MEGABYTE = 10L*1024L*1024L
+
     override fun downloadFile(
         uri: Uri,
         onFileDownloadListener: OnFileDownloadListener
@@ -167,7 +169,8 @@ class ChatRepositoryImpl @Inject constructor(
         firebaseStorage
             .reference
             .child("images/$uri")
-            .downloadUrl
+            .getBytes(TEN_MEGABYTE)
+//            .downloadUrl
             .addOnSuccessListener {
                 onFileDownloadListener.onSuccess(it)
             }

@@ -178,8 +178,8 @@ class ChatActivity : AppCompatActivity() {
 
         // 상대방 프로필 이미지 다운로드
         chatViewModel.downloadProfileImage(otherID!!, object: OnFileDownloadListener {
-            override fun onSuccess(uri: Uri) {
-                messageAdapter.setImageProfileUri(uri)
+            override fun onSuccess(byteArray: ByteArray) {
+                messageAdapter.setImageProfileUri(byteArray)
             }
 
             override fun onFailure(e: Exception) {
@@ -202,8 +202,8 @@ class ChatActivity : AppCompatActivity() {
                     if (currMessage.imageUri.isEmpty()) return@forEachIndexed
 
                     chatViewModel.downloadFile(Uri.parse("${currMessage.senderId}/${currMessage.sentTime}/${currMessage.messageIndex}"), object: OnFileDownloadListener {
-                        override fun onSuccess(uri: Uri) {
-                            messageAdapter.addImageUriToList(idx, uri)
+                        override fun onSuccess(byteArray: ByteArray) {
+                            messageAdapter.addImageUriToList(idx, byteArray)
                             messageAdapter.notifyItemChanged(idx)
                         }
 

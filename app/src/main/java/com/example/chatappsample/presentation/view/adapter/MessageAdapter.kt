@@ -2,13 +2,11 @@ package com.example.chatappsample.presentation.view.adapter
 
 import android.net.Uri
 import android.view.*
-import androidx.core.net.toUri
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.MultiTransformation
-import com.bumptech.glide.load.Transformation
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.example.chatappsample.R
 import com.example.chatappsample.domain.dto.Message
@@ -30,8 +28,8 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
     private var onSentImageClickListener: OnImageClickListener? = null
     private var onReceivedImageClickListener: OnImageClickListener? = null
 
-    private val imageList: MutableList<Uri?> = mutableListOf()
-    private var profileUri: Uri = "".toUri()
+    private val imageList: MutableList<ByteArray?> = mutableListOf()
+    private var profileByteArray: ByteArray? = null
 
     inner class SentMessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val sentMessageTextView: MaterialTextView = itemView.findViewById(R.id.tv_sent_message)
@@ -64,8 +62,8 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
             receivedMessageTextView.text = message.message
             receivedTimeTextView.text = message.sentTime
 
-            if (profileUri != "".toUri()) Glide.with(itemView.context)
-                .load(profileUri)
+            if (profileByteArray != null) Glide.with(itemView.context)
+                .load(profileByteArray)
                 .into(receivedMessageUserProfile)
         }
     }
@@ -80,9 +78,9 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
             }
         }
 
-        fun bind(message: Message, imageUri: Uri?) {
-            if (imageUri != null) Glide.with(itemView.context)
-                .load(imageUri)
+        fun bind(message: Message, imageByteArray: ByteArray?) {
+            if (imageByteArray != null) Glide.with(itemView.context)
+                .load(imageByteArray)
                 .transform(MultiTransformation(RoundedCorners(10)))
                 .placeholder(R.drawable.ic_outline_image_24)
                 .error(R.drawable.ic_outline_image_not_supported_24)
@@ -103,9 +101,9 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
             }
         }
 
-        fun bind(message: Message, imageUri: Uri?) {
-            if (imageUri != null) Glide.with(itemView.context)
-                .load(imageUri)
+        fun bind(message: Message, imageByteArray: ByteArray?) {
+            if (imageByteArray != null) Glide.with(itemView.context)
+                .load(imageByteArray)
                 .transform(MultiTransformation(RoundedCorners(10)))
                 .placeholder(R.drawable.ic_outline_image_24)
                 .error(R.drawable.ic_outline_image_not_supported_24)
@@ -113,8 +111,8 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
                 .into(receivedImageView)
             receivedTimeTextView.text = message.sentTime
 
-            if (profileUri != "".toUri()) Glide.with(itemView.context)
-                .load(profileUri)
+            if (profileByteArray != null) Glide.with(itemView.context)
+                .load(profileByteArray)
                 .into(receivedImageUserProfile)
         }
     }
@@ -154,8 +152,8 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
         }
     }
 
-    fun addImageUriToList(index: Int, uri: Uri) {
-        this.imageList[index] = uri
+    fun addImageUriToList(index: Int, imageByteArray: ByteArray) {
+        this.imageList[index] = imageByteArray
     }
 
     fun setUriListSize(size: Int) {
@@ -220,8 +218,8 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
         if (list != messageList) messageList = list!!.toList()
     }
 
-    fun setImageProfileUri(uri: Uri) {
-        this.profileUri = uri
+    fun setImageProfileUri(byteArray: ByteArray) {
+        this.profileByteArray = byteArray
         notifyDataSetChanged()
     }
 }
