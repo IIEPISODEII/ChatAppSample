@@ -13,6 +13,8 @@ import androidx.core.widget.doOnTextChanged
 import androidx.lifecycle.ViewModelProvider
 import com.example.chatappsample.R
 import com.example.chatappsample.presentation.viewmodel.UserViewModel
+import com.example.chatappsample.util.CharLengthInputFilter
+import com.example.chatappsample.util.LetterDigitsInputFilter
 import com.example.chatappsample.util.Resource
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
@@ -89,36 +91,6 @@ class SignUpActivity : AppCompatActivity() {
             }
 
             viewModel.signUp(name, email, password)
-        }
-    }
-
-    private class LetterDigitsInputFilter: InputFilter {
-        override fun filter(
-            source: CharSequence?,
-            start: Int,
-            end: Int,
-            dest: Spanned?,
-            dstart: Int,
-            dend: Int
-        ): CharSequence {
-            for (i in start until end) {
-                 if (!Character.isLetterOrDigit(source!![i])) return ""
-            }
-            return source!!
-        }
-    }
-
-    private class CharLengthInputFilter(private val endLimit: Int): InputFilter {
-        override fun filter(
-            source: CharSequence?,
-            start: Int,
-            end: Int,
-            dest: Spanned?,
-            dstart: Int,
-            dend: Int
-        ): CharSequence {
-            return if (source!!.length + dend > endLimit) ""
-            else source
         }
     }
 }

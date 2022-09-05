@@ -16,6 +16,8 @@ import com.example.chatappsample.databinding.FragmentMyPageBinding
 import com.example.chatappsample.domain.dto.Message
 import com.example.chatappsample.domain.dto.User
 import com.example.chatappsample.presentation.viewmodel.UserViewModel
+import com.example.chatappsample.util.CharLengthInputFilter
+import com.example.chatappsample.util.LetterDigitsInputFilter
 import com.google.android.material.imageview.ShapeableImageView
 import java.text.SimpleDateFormat
 import java.util.*
@@ -47,15 +49,25 @@ class MypageFragment : Fragment() {
 
             myProfile = it
         }
-        viewModel.isProfileEditMode.observe(this.viewLifecycleOwner) {}
+        viewModel.isProfileEditMode.observe(this.viewLifecycleOwner) {
+            mBinding.tvMyPageUserProfileNameRules.visibility = if (it) View.VISIBLE else View.INVISIBLE
+        }
 
         mBinding.btnMyPageUserProfileEditSave.setOnClickListener {
             viewModel.toggleProfileEditMode(false)
             mBinding.root.requestFocus()
+            viewModel.updateCurrentUser(myProfile!!.apply {
+                name = mBinding.etMyPageUserProfileNameModify.text.toString()
+            }, false)
         }
+
         mBinding.ivMyPageUserProfileEdit.setOnClickListener {
             viewModel.toggleProfileEditMode(true)
-            mBinding.tvMyPageUserProfileNameModify.requestFocus()
+            mBinding.etMyPageUserProfileNameModify.let {
+                it.requestFocus()
+                it.setText(myProfile!!.name)
+                it.filters = arrayOf(LetterDigitsInputFilter(), CharLengthInputFilter(10))
+            }
         }
 
         val getProfileImageFromActivity = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -66,7 +78,7 @@ class MypageFragment : Fragment() {
                     profile.profileImage = selectedProfileImageUri.toString()
                 }
 
-                if (myProfile != null) viewModel.updateCurrentUser(myProfile!!)
+                if (myProfile != null) viewModel.updateCurrentUser(myProfile!!, true)
             }
         }
 

@@ -1,5 +1,6 @@
 package com.example.chatappsample.presentation.viewmodel
 
+import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -123,8 +124,8 @@ class UserViewModel @Inject constructor(
         setAutoLoginCheckUsecase(false)
     }
 
-    fun updateCurrentUser(user: User) {
-        updateCurrentUserUsecase.invoke(user)
+    fun updateCurrentUser(user: User, changeProfileImage: Boolean) {
+        updateCurrentUserUsecase.invoke(user, changeProfileImage)
     }
 
     fun downloadProfileImage(user: User, onFileDownloadListener: OnFileDownloadListener) {

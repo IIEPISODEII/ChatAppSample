@@ -4,6 +4,5 @@ data class User(
     var name: String = "",
     var email: String = "",
     val uid: String = "",
-    var profileImage: String = "",
-    var lastMessage: Message = Message()
+    var profileImage: String = ""
 )

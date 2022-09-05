@@ -79,7 +79,7 @@ class UserRepositoryImpl @Inject constructor(
                 if (task.isSuccessful) {
                     db.child("user")
                         .child(task.result.user!!.uid)
-                        .setValue(User(name, email, task.result.user!!.uid, "", Message()))
+                        .setValue(User(name, email, task.result.user!!.uid, ""))
 
                     listener.onSuccess(task)
                 } else {
@@ -89,22 +89,23 @@ class UserRepositoryImpl @Inject constructor(
             }
     }
 
-    override fun updateCurrentUser(user: User) {
+    override fun updateCurrentUser(user: User, changeProfileImage: Boolean) {
 
         db
             .child("user")
             .child(user.uid)
             .setValue(user)
             .addOnSuccessListener {
+                if (changeProfileImage) {
+                    val metadata = storageMetadata {
+                        contentType = "image/jpeg"
+                    }
 
-                val metadata = storageMetadata {
-                    contentType = "image/jpeg"
+                    firebaseStorage.reference
+                        .child("profileImages/${user.uid}")
+                        .putFile(Uri.parse(user.profileImage), metadata)
+
                 }
-
-                firebaseStorage.reference
-                    .child("profileImages/${user.uid}")
-                    .putFile(Uri.parse(user.profileImage), metadata)
-
             }
     }
 

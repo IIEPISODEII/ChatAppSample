@@ -39,7 +39,6 @@ class MainActivity : FragmentActivity() {
 
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
 
-        // Initialize Viewmodel Databinding & Lifecycle Setting
         mBinding = DataBindingUtil.setContentView(this, R.layout.activity_main)
         mBinding.viewModel = this@MainActivity.viewModel
         mBinding.lifecycleOwner = this@MainActivity
@@ -49,12 +48,12 @@ class MainActivity : FragmentActivity() {
             if (it != null && currentUser?.profileImage != it.profileImage) {
                 viewModel.downloadProfileImage(it, object: OnFileDownloadListener {
 
-                    override fun onSuccess(uri: Uri) {
+                    override fun onSuccess(byteArray: ByteArray) {
                         mypageFragment.setOnGetUserProfile(object: MypageFragment.OnGetUserProfileListener {
                             override fun setOnGetUserProfileListener(imageView: ShapeableImageView) {
                                 Glide
                                     .with(this@MainActivity)
-                                    .load(uri)
+                                    .load(byteArray)
                                     .into(imageView)
                             }
                         })
