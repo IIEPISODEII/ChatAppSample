@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
 import com.example.chatappsample.domain.`interface`.OnGetDataListener
 import com.example.chatappsample.domain.`interface`.OnGetRegistrationListener
+import com.example.chatappsample.domain.dto.Message
 import com.example.chatappsample.domain.dto.User
 import com.example.chatappsample.domain.usecase.*
 import com.example.chatappsample.util.Resource
@@ -31,7 +32,8 @@ class UserViewModel @Inject constructor(
     private val signUpUsecase: SignUpUsecase,
     private val setAutoLoginCheckUsecase: SetAutoLoginCheckUsecase,
     private val updateCurrentUserUsecase: UpdateCurrentUserUsercase,
-    private val downloadProfileImageUsecase: DownloadProfileImageUsecase
+    private val downloadProfileImageUsecase: DownloadProfileImageUsecase,
+    private val takeLastMessageUsecase: TakeLastMessageUsecase,
 ) : ViewModel() {
 
     private val _currentUser = MutableLiveData<User?>()
@@ -138,5 +140,9 @@ class UserViewModel @Inject constructor(
 
     fun toggleProfileEditMode(mode: Boolean) {
         _isProfileEditMode.postValue(mode)
+    }
+
+    fun takeLastMessage(user: User, listener: OnGetDataListener) {
+        takeLastMessageUsecase(currentUser.value!!.uid + user.uid, listener)
     }
 }

@@ -280,7 +280,7 @@ class ChatActivity : AppCompatActivity() {
         messageAdapter.setOnSentMessageClickListener(object :
             MessageAdapter.OnMessageClickListener {
             override fun onClick(view: View, position: Int) {
-                println("View: $view, Position: $position")
+               println("View: $view, Position: $position")
                 onClickSentMessage(view, position)
             }
         })
@@ -289,7 +289,6 @@ class ChatActivity : AppCompatActivity() {
         messageAdapter.setOnReceivedMessageClickListener(object :
             MessageAdapter.OnMessageClickListener {
             override fun onClick(view: View, position: Int) {
-                println("View: $view, Position: $position")
                 onClickReceivedMessage(view, position)
             }
         })

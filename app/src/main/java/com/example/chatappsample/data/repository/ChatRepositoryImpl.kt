@@ -35,7 +35,7 @@ class ChatRepositoryImpl @Inject constructor(
             .child(chatRoom)
             .child(FIREBASE_SECOND_CHILD)
             .limitToLast(30)
-            .addValueEventListener(object: ValueEventListener {
+            .addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     listener.onSuccess(snapshot)
 
@@ -68,7 +68,7 @@ class ChatRepositoryImpl @Inject constructor(
                 .removeEventListener(this.childEventListener!!)
         }
 
-        this.childEventListener = object: ChildEventListener {
+        this.childEventListener = object : ChildEventListener {
             @SuppressLint("NotifyDataSetChanged")
             override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
                 listener.onSuccess(snapshot)
@@ -160,7 +160,7 @@ class ChatRepositoryImpl @Inject constructor(
             }
     }
 
-    private val TEN_MEGABYTE = 10L*1024L*1024L
+    private val TEN_MEGABYTE = 10L * 1024L * 1024L
 
     override fun downloadFile(
         uri: Uri,
@@ -170,13 +170,43 @@ class ChatRepositoryImpl @Inject constructor(
             .reference
             .child("images/$uri")
             .getBytes(TEN_MEGABYTE)
-//            .downloadUrl
             .addOnSuccessListener {
                 onFileDownloadListener.onSuccess(it)
             }
             .addOnFailureListener {
                 onFileDownloadListener.onFailure(it)
             }
+    }
 
+    private var onTakelastMessage: ValueEventListener? = null
+
+    override fun takeLastMessageOfChatRoom(chatRoom: String, listener: OnGetDataListener) {
+        if (onTakelastMessage != null) {
+            firebaseDatabase
+                .reference
+                .child(FIREBASE_FIRST_CHILD)
+                .child(chatRoom)
+                .child(FIREBASE_SECOND_CHILD)
+                .limitToLast(1)
+                .removeEventListener(this.onTakelastMessage!!)
+        }
+
+        onTakelastMessage = object: ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                listener.onSuccess(snapshot)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                listener.onFailure(error)
+            }
+        }
+
+        firebaseDatabase
+            .reference
+            .child(FIREBASE_FIRST_CHILD)
+            .child(chatRoom)
+            .child(FIREBASE_SECOND_CHILD)
+            .limitToLast(1)
+            .addValueEventListener(this.onTakelastMessage!!)
     }
 }

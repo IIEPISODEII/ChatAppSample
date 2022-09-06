@@ -6,15 +6,30 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.example.chatappsample.presentation.view.ChatActivity
 import com.example.chatappsample.R
+import com.example.chatappsample.domain.dto.Message
 import com.example.chatappsample.domain.dto.User
+import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.textview.MaterialTextView
 
-class MainUserAdapter(val ctx: Context, var currentUserId: String, var userList: ArrayList<User>): RecyclerView.Adapter<MainUserAdapter.CustomViewHolder>() {
+class MainUserAdapter(var currentUserId: String, var userList: ArrayList<User>): RecyclerView.Adapter<MainUserAdapter.CustomViewHolder>() {
+
+    private val lastMessageList: MutableMap<String, Message> = mutableMapOf()
+    private val profileImageByteList: MutableMap<String, ByteArray> = mutableMapOf()
 
     inner class CustomViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val userName = itemView.findViewById<MaterialTextView>(R.id.tv_main_user_name)
+        val userLastMessage = itemView.findViewById<MaterialTextView>(R.id.tv_last_chatting)
+        val userLastMessageTime = itemView.findViewById<MaterialTextView>(R.id.tv_last_chatting_sent_time)
+        val userProfileImage = itemView.findViewById<ShapeableImageView>(R.id.iv_main_user_profile_thumbnail)
+
+        init {
+            itemView.setOnClickListener { view ->
+                onChatRoomClickListener?.onChatRoomClick(view, adapterPosition)
+            }
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CustomViewHolder {
@@ -25,16 +40,31 @@ class MainUserAdapter(val ctx: Context, var currentUserId: String, var userList:
     override fun onBindViewHolder(holder: CustomViewHolder, position: Int) {
         val selectedUser = userList[position]
         holder.userName.text = selectedUser.name
-        holder.itemView.setOnClickListener {
-            val intent = Intent(ctx, ChatActivity::class.java).apply {
-                putExtra(ChatActivity.OTHER_NAME, selectedUser.name)
-                putExtra(ChatActivity.OTHER_UID, selectedUser.uid)
-                putExtra(ChatActivity.CURRENT_UID, currentUserId)
-            }
-
-            ctx.startActivity(intent)
-        }
+        holder.userLastMessage.text = if (selectedUser.profileImage.isNotEmpty()) "사진" else lastMessageList[selectedUser.uid]?.message
+        holder.userLastMessageTime.text = lastMessageList[selectedUser.uid]?.sentTime
+        Glide
+            .with(holder.itemView.context)
+            .load(profileImageByteList[selectedUser.uid])
+            .into(holder.userProfileImage)
     }
 
     override fun getItemCount(): Int = userList.size
+
+    fun addLastMessageToList(user: User, message: Message) {
+        lastMessageList[user.uid] = message
+    }
+
+    fun addProfileImageByteArrayToList(user: User, byteArray: ByteArray) {
+        profileImageByteList[user.uid] = byteArray
+    }
+
+    private var onChatRoomClickListener: ChatRoomClickListener? = null
+
+    interface ChatRoomClickListener {
+        fun onChatRoomClick(view: View, position: Int)
+    }
+
+    fun setOnChatRoomClickListener(listener: ChatRoomClickListener) {
+        this.onChatRoomClickListener = listener
+    }
 }

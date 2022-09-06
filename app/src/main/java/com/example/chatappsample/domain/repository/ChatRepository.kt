@@ -33,6 +33,11 @@ interface ChatRepository {
         onFirebaseCommunicationListener: OnFirebaseCommunicationListener
     )
 
+    fun takeLastMessageOfChatRoom(
+        chatRoom: String,
+        listener: OnGetDataListener
+    )
+
     fun downloadFile(
         uri: Uri,
         onFileDownloadListener: OnFileDownloadListener

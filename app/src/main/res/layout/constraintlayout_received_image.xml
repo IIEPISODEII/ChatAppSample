@@ -21,7 +21,7 @@
         android:layout_width="160dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="10dp"
-        android:background="@color/transparent"
+        android:background="@color/light_grey_dfdfdf"
         android:src="@drawable/ic_outline_image_24"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toEndOf="@id/iv_received_image_user_profile" />
