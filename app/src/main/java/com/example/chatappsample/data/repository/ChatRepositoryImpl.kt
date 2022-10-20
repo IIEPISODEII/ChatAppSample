@@ -1,20 +1,24 @@
 package com.example.chatappsample.data.repository
 
-import android.annotation.SuppressLint
 import android.net.Uri
+import android.util.Log
+import com.example.chatappsample.data.entity.MessageEntity
 import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
 import com.example.chatappsample.domain.`interface`.OnFirebaseCommunicationListener
-import com.example.chatappsample.domain.`interface`.OnGetDataListener
 import com.example.chatappsample.domain.dto.Message
 import com.example.chatappsample.domain.repository.ChatRepository
 import com.google.firebase.database.*
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.ktx.storageMetadata
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class ChatRepositoryImpl @Inject constructor(
     private val firebaseDatabase: FirebaseDatabase,
-    private val firebaseStorage: FirebaseStorage
+    private val firebaseStorage: FirebaseStorage,
+    private val messageRoomDB: AppDatabase
 ) : ChatRepository {
 
     companion object {
@@ -22,98 +26,76 @@ class ChatRepositoryImpl @Inject constructor(
         const val FIREBASE_SECOND_CHILD = "messages"
     }
 
-    private var childEventListener: ChildEventListener? = null
-    private var postQueriesSize: Int = 0
-
-    override fun receiveAllMessages(
+    override suspend fun fetchMessagesFromExternalDB(
         chatRoom: String,
-        listener: OnGetDataListener
+        coroutineScope: CoroutineScope
     ) {
         firebaseDatabase
             .reference
             .child(FIREBASE_FIRST_CHILD)
             .child(chatRoom)
             .child(FIREBASE_SECOND_CHILD)
-            .limitToLast(30)
-            .addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    listener.onSuccess(snapshot)
+            .addChildEventListener(object: ChildEventListener {
+                override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
+                    coroutineScope.launch(Dispatchers.IO) {
+                        val receivedMessage = snapshot.getValue(Message::class.java)
+                        if (receivedMessage != null) {
+                            messageRoomDB
+                                .getMessageDao()
+                                .insertMessage(receivedMessage.toMessageEntity(chatRoom))
+                        }
+                    }
+                }
 
-                    firebaseDatabase
-                        .reference
-                        .child(FIREBASE_FIRST_CHILD)
-                        .child(chatRoom)
-                        .child(FIREBASE_SECOND_CHILD)
-                        .limitToLast(30)
-                        .removeEventListener(this)
+                override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
+
+                }
+
+                override fun onChildRemoved(snapshot: DataSnapshot) {
+
+                }
+
+                override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {
+
                 }
 
                 override fun onCancelled(error: DatabaseError) {
-                    listener.onFailure(error)
+                    Log.d("ERROR:", error.message)
                 }
+
             })
     }
 
-    override fun receiveAdditionalMessage(
+    override suspend fun fetchMessagesFromRoomDBAsFlow(
         chatRoom: String,
-        queriesSize: Int,
-        listener: OnGetDataListener
-    ) {
-        if (this.childEventListener != null) {
-            firebaseDatabase.reference
-                .child(FIREBASE_FIRST_CHILD)
-                .child(chatRoom)
-                .child(FIREBASE_SECOND_CHILD)
-                .limitToLast(postQueriesSize)
-                .removeEventListener(this.childEventListener!!)
-        }
-
-        this.childEventListener = object : ChildEventListener {
-            @SuppressLint("NotifyDataSetChanged")
-            override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
-                listener.onSuccess(snapshot)
-            }
-
-            override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
-            }
-
-            override fun onChildRemoved(snapshot: DataSnapshot) {
-            }
-
-            override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                listener.onFailure(error)
-            }
-        }
-        listener.onStart()
-
-        postQueriesSize = queriesSize
-        firebaseDatabase
-            .reference
-            .child(FIREBASE_FIRST_CHILD)
-            .child(chatRoom)
-            .child(FIREBASE_SECOND_CHILD)
-            .limitToLast(postQueriesSize)
-            .addChildEventListener(this.childEventListener!!)
+        queriesSize: Int
+    ): Flow<List<Message>> {
+        return messageRoomDB.getMessageDao().fetchRecentlyReceivedMessagesAsFlow(chatRoom, queriesSize).map { messageEntityList -> messageEntityList.map{ it.toMessageDTO() } }
     }
 
-    override fun sendMessage(
+    override suspend fun fetchMessagesFromRoomDB(
+        chatRoom: String,
+        queriesSize: Int,
+        offset: Int
+    ): List<Message> {
+        return messageRoomDB.getMessageDao().fetchRecentlyReceivedMessages(chatRoom, queriesSize, offset).map { it.toMessageDTO() }
+    }
+
+    override suspend fun sendMessage(
         message: Message,
-        senderChatRoom: String,
-        receiverChatRoom: String,
+        myChatRoom: String,
+        yourChatRoom: String,
         onFirebaseCommunicationListener: OnFirebaseCommunicationListener
-    ): Boolean {
+    ) {
         firebaseDatabase.reference.child(FIREBASE_FIRST_CHILD)
-            .child(senderChatRoom)
+            .child(myChatRoom)
             .child(FIREBASE_SECOND_CHILD)
             .push()
             .setValue(message)
             .addOnSuccessListener {
                 firebaseDatabase.reference
                     .child(FIREBASE_FIRST_CHILD)
-                    .child(receiverChatRoom)
+                    .child(yourChatRoom)
                     .child(FIREBASE_SECOND_CHILD)
                     .push()
                     .setValue(message)
@@ -122,38 +104,36 @@ class ChatRepositoryImpl @Inject constructor(
             .addOnCanceledListener {
                 onFirebaseCommunicationListener.onFailure()
             }
-
-        return true
     }
 
-    override fun uploadFile(
+    override suspend fun uploadFile(
         message: Message,
-        senderChatRoom: String,
-        receiverChatRoom: String,
+        myChatRoom: String,
+        yourChatRoom: String,
         onFirebaseCommunicationListener: OnFirebaseCommunicationListener
     ) {
-        firebaseDatabase.reference.child(FIREBASE_FIRST_CHILD)
-            .child(senderChatRoom)
-            .child(FIREBASE_SECOND_CHILD)
-            .push()
-            .setValue(message)
+        val metadata = storageMetadata {
+            contentType = "image/jpeg"
+        }
+        firebaseStorage.reference
+            .child("images/${message.senderId}/${message.sentTime}/${message.message}")
+            .putFile(Uri.parse(message.message), metadata)
             .addOnSuccessListener {
-                firebaseDatabase.reference
-                    .child(FIREBASE_FIRST_CHILD)
-                    .child(receiverChatRoom)
+                firebaseDatabase.reference.child(FIREBASE_FIRST_CHILD)
+                    .child(myChatRoom)
                     .child(FIREBASE_SECOND_CHILD)
                     .push()
                     .setValue(message)
+                    .addOnSuccessListener {
+                        firebaseDatabase.reference
+                            .child(FIREBASE_FIRST_CHILD)
+                            .child(yourChatRoom)
+                            .child(FIREBASE_SECOND_CHILD)
+                            .push()
+                            .setValue(message)
 
-                val metadata = storageMetadata {
-                    contentType = "image/jpeg"
-                }
-                firebaseStorage.reference
-                    .child("images/${message.senderId}/${message.sentTime}/${message.messageIndex}")
-                    .putFile(Uri.parse(message.imageUri), metadata)
-
-
-                onFirebaseCommunicationListener.onSuccess()
+                        onFirebaseCommunicationListener.onSuccess()
+                    }
             }
             .addOnCanceledListener {
                 onFirebaseCommunicationListener.onFailure()
@@ -163,50 +143,29 @@ class ChatRepositoryImpl @Inject constructor(
     private val TEN_MEGABYTE = 10L * 1024L * 1024L
 
     override fun downloadFile(
-        uri: Uri,
+        message: Message,
         onFileDownloadListener: OnFileDownloadListener
     ) {
         firebaseStorage
             .reference
-            .child("images/$uri")
+            .child("images/${message.senderId}/${message.sentTime}/${message.message}")
             .getBytes(TEN_MEGABYTE)
             .addOnSuccessListener {
                 onFileDownloadListener.onSuccess(it)
             }
             .addOnFailureListener {
                 onFileDownloadListener.onFailure(it)
+                it.printStackTrace()
             }
     }
 
-    private var onTakelastMessage: ValueEventListener? = null
-
-    override fun takeLastMessageOfChatRoom(chatRoom: String, listener: OnGetDataListener) {
-        if (onTakelastMessage != null) {
-            firebaseDatabase
-                .reference
-                .child(FIREBASE_FIRST_CHILD)
-                .child(chatRoom)
-                .child(FIREBASE_SECOND_CHILD)
-                .limitToLast(1)
-                .removeEventListener(this.onTakelastMessage!!)
+    override suspend fun takeLastMessageOfChatRoom(chatRoom: String): Flow<Message> {
+        return messageRoomDB
+            .getMessageDao()
+            .fetchLastReceivedMessages(chatRoom)
+            .map {
+                value: MessageEntity? ->
+                value?.toMessageDTO() ?: Message()
         }
-
-        onTakelastMessage = object: ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                listener.onSuccess(snapshot)
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                listener.onFailure(error)
-            }
-        }
-
-        firebaseDatabase
-            .reference
-            .child(FIREBASE_FIRST_CHILD)
-            .child(chatRoom)
-            .child(FIREBASE_SECOND_CHILD)
-            .limitToLast(1)
-            .addValueEventListener(this.onTakelastMessage!!)
     }
 }

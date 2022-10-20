@@ -1,32 +1,29 @@
 package com.example.chatappsample.data.repository
 
-import android.annotation.SuppressLint
 import android.net.Uri
-import com.example.chatappsample.di.IoDispatcher
+import android.util.Log
+import com.example.chatappsample.data.entity.UserEntity
 import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
 import com.example.chatappsample.domain.`interface`.OnGetDataListener
 import com.example.chatappsample.domain.`interface`.OnGetRegistrationListener
-import com.example.chatappsample.domain.dto.Message
 import com.example.chatappsample.domain.dto.User
 import com.example.chatappsample.domain.repository.UserRepository
-import com.example.chatappsample.util.Resource
-import com.example.chatappsample.util.safeCall
-import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.*
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.ktx.storageMetadata
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 class UserRepositoryImpl @Inject constructor(
     private val firebaseDatabase: FirebaseDatabase,
     private val firebaseAuth: FirebaseAuth,
-    private val firebaseStorage: FirebaseStorage
+    private val firebaseStorage: FirebaseStorage,
+    private val userRoomDB: AppDatabase
 ) : UserRepository {
 
     private val db = firebaseDatabase.reference
@@ -34,7 +31,7 @@ class UserRepositoryImpl @Inject constructor(
     override fun getCurrentUser(listener: OnGetDataListener) {
         val firebaseUserId = firebaseAuth.currentUser?.uid ?: "NO ID"
 
-        firebaseDatabase.reference.child("user").child(firebaseUserId)
+        db.child("user").child(firebaseUserId)
             .addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     listener.onSuccess(snapshot)
@@ -46,21 +43,41 @@ class UserRepositoryImpl @Inject constructor(
             })
     }
 
-    override fun getAllUsers(listener: OnGetDataListener) {
-        listener.onStart()
+    private fun insertUser(userEntity: UserEntity) = userRoomDB.getUserDao().insertUser(userEntity)
 
-        db.child("user")
-            .addValueEventListener(object : ValueEventListener {
-                @SuppressLint("NotifyDataSetChanged")
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    listener.onSuccess(snapshot)
+    override fun receiveAllUsersFromExternalDB(coroutineScope: CoroutineScope) {
+        db
+            .child("user")
+            .addChildEventListener(object: ChildEventListener {
+                override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
+                    coroutineScope.launch(Dispatchers.IO) { insertUser(snapshot.getValue(User::class.java)!!.toUserEntity()) }
+                }
+
+                override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
+                    coroutineScope.launch(Dispatchers.IO) { insertUser(snapshot.getValue(User::class.java)!!.toUserEntity()) }
+                }
+
+                override fun onChildRemoved(snapshot: DataSnapshot) {
+                    coroutineScope.launch(Dispatchers.IO) { userRoomDB.getUserDao().deleteUser(snapshot.getValue(User::class.java)!!.toUserEntity()) }
+                }
+
+                override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {
+
                 }
 
                 override fun onCancelled(error: DatabaseError) {
-                    listener.onFailure(error)
+                    Log.d("ERROR:", error.message)
                 }
-
             })
+    }
+
+    override suspend fun getAllUsersFromRoomDB(): Flow<List<User>> {
+        return userRoomDB
+            .getUserDao()
+            .getAllUserList()
+            .map {
+                    userEntityList -> userEntityList.map { userEntity -> userEntity.toUserDTO() }
+            }
     }
 
     override fun signOut(): Boolean {
@@ -79,7 +96,7 @@ class UserRepositoryImpl @Inject constructor(
                 if (task.isSuccessful) {
                     db.child("user")
                         .child(task.result.user!!.uid)
-                        .setValue(User(name, email, task.result.user!!.uid, ""))
+                        .setValue(User(name = name, uid = task.result.user!!.uid, profileImage = "", email = email))
 
                     listener.onSuccess(task)
                 } else {
@@ -107,6 +124,26 @@ class UserRepositoryImpl @Inject constructor(
 
                 }
             }
+
+        if (changeProfileImage) {
+
+            val metadata = storageMetadata {
+                contentType = "image/jpeg"
+            }
+
+            firebaseStorage
+                .reference
+                .child("profileImages/${user.uid}")
+                .putFile(Uri.parse(user.profileImage), metadata)
+                .addOnCompleteListener { task ->
+                    db
+                        .child("user")
+                        .child(user.uid)
+                        .setValue(user.apply {
+                            this.profileImage = task.result.uploadSessionUri.toString()
+                        })
+                }
+        }
     }
 
     private val TEN_MEGABYTE = 10L*1024L*1024L

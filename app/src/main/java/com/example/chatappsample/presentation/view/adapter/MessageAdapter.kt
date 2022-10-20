@@ -1,7 +1,8 @@
 package com.example.chatappsample.presentation.view.adapter
 
-import android.net.Uri
-import android.view.*
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -18,137 +19,170 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
 
     // 리사이클러 뷰홀더 타입 지정
     private val EMPTY_MESSAGE = -1
-    private val SENT_MESSAGE = 0
-    private val RECEIVED_MESSAGE = 1
-    private val SENT_IMAGE = 2
-    private val RECEIVED_IMAGE = 3
+    private val MY_MESSAGE = 0
+    private val OTHERS_MESSAGE = 1
+    private val MY_IMAGE = 2
+    private val OTHERS_IMAGE = 3
 
-    private var onSentMessageClickListener: OnMessageClickListener? = null
-    private var onReceivedMessageClickListener: OnMessageClickListener? = null
-    private var onSentImageClickListener: OnImageClickListener? = null
+    private var onMyMessageClickListener: OnMessageClickListener? = null
+    private var onOthersMessageClickListener: OnMessageClickListener? = null
+    private var onMyImageClickListener: OnImageClickListener? = null
     private var onReceivedImageClickListener: OnImageClickListener? = null
 
     private val imageList: MutableList<ByteArray?> = mutableListOf()
     private var profileByteArray: ByteArray? = null
 
-    inner class SentMessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val sentMessageTextView: MaterialTextView = itemView.findViewById(R.id.tv_sent_message)
-        private val sentTimeTextView: MaterialTextView = itemView.findViewById(R.id.tv_sent_message_time)
+    inner class MyMessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val myDateTextView: MaterialTextView = itemView.findViewById(R.id.tv_current_date_presentation_in_my_message_viewholder)
+        private val myMessageTextView: MaterialTextView = itemView.findViewById(R.id.tv_my_message)
+        private val myTimeTextView: MaterialTextView = itemView.findViewById(R.id.tv_my_message_time)
 
         init {
-            sentMessageTextView.setOnClickListener {
-                if (adapterPosition != RecyclerView.NO_POSITION) onSentMessageClickListener?.onClick(it, adapterPosition)
+            myMessageTextView.setOnClickListener {
+                if (adapterPosition != RecyclerView.NO_POSITION) onMyMessageClickListener?.onClick(it, adapterPosition)
             }
         }
 
-        fun bind(message: Message) {
-            sentMessageTextView.text = message.message
-            sentTimeTextView.text = message.sentTime
+        fun bind(message: Message, isDateVisible: Boolean) {
+            if (isDateVisible) {
+                myDateTextView.run {
+                    visibility = View.VISIBLE
+                    text = convertSimpleDateFormatToTime(message.sentTime)[0]
+                }
+            }
+            myMessageTextView.text = message.message
+            myTimeTextView.text = convertSimpleDateFormatToTime(message.sentTime)[1]
         }
     }
 
-    inner class ReceivedMessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val receivedMessageTextView: MaterialTextView = itemView.findViewById(R.id.tv_received_message)
-        private val receivedTimeTextView: MaterialTextView = itemView.findViewById(R.id.tv_received_message_time)
-        private val receivedMessageUserProfile: ShapeableImageView = itemView.findViewById(R.id.iv_received_message_user_profile)
+    inner class OthersMessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val othersDateTextView: MaterialTextView = itemView.findViewById(R.id.tv_current_date_presentation_in_others_message_viewholder)
+        private val othersMessageTextView: MaterialTextView = itemView.findViewById(R.id.tv_others_message)
+        private val othersTimeTextView: MaterialTextView = itemView.findViewById(R.id.tv_others_message_time)
+        private val othersMessageUserProfile: ShapeableImageView = itemView.findViewById(R.id.iv_others_message_user_profile)
 
         init {
-            receivedMessageTextView.setOnClickListener {
-                if (adapterPosition != RecyclerView.NO_POSITION) onReceivedMessageClickListener?.onClick(it, adapterPosition)
+            othersMessageTextView.setOnClickListener {
+                if (adapterPosition != RecyclerView.NO_POSITION) onOthersMessageClickListener?.onClick(it, adapterPosition)
             }
         }
 
-        fun bind(message: Message) {
-            receivedMessageTextView.text = message.message
-            receivedTimeTextView.text = message.sentTime
+        fun bind(message: Message, isDateVisible: Boolean) {
+            if (isDateVisible) {
+                othersDateTextView.run {
+                    visibility = View.VISIBLE
+                    text = convertSimpleDateFormatToTime(message.sentTime)[0]
+                }
+            }
+            othersMessageTextView.text = message.message
+            othersTimeTextView.text = convertSimpleDateFormatToTime(message.sentTime)[1]
 
             if (profileByteArray != null) Glide.with(itemView.context)
                 .load(profileByteArray)
-                .into(receivedMessageUserProfile)
+                .into(othersMessageUserProfile)
         }
     }
 
-    inner class SentImageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val sentImageView: ShapeableImageView = itemView.findViewById(R.id.iv_sent_image)
-        private val sentTimeTextView: MaterialTextView = itemView.findViewById(R.id.tv_sent_image_time)
+    inner class MyImageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val myDateTextView: MaterialTextView = itemView.findViewById(R.id.tv_current_date_presentation_in_my_image_viewholder)
+        private val myImageView: ShapeableImageView = itemView.findViewById(R.id.iv_my_image)
+        private val myTimeTextView: MaterialTextView = itemView.findViewById(R.id.tv_my_image_time)
 
         init {
-            sentImageView.setOnClickListener {
-                if (adapterPosition != RecyclerView.NO_POSITION) onSentImageClickListener?.onClick(it, adapterPosition)
+            myImageView.setOnClickListener {
+                if (adapterPosition != RecyclerView.NO_POSITION) onMyImageClickListener?.onClick(it, adapterPosition)
             }
         }
 
-        fun bind(message: Message, imageByteArray: ByteArray?) {
+        fun bind(message: Message, isDateVisible: Boolean, imageByteArray: ByteArray?) {
+            if (isDateVisible) {
+                myDateTextView.run {
+                    visibility = View.VISIBLE
+                    text = convertSimpleDateFormatToTime(message.sentTime)[0]
+                }
+            }
             if (imageByteArray != null) Glide.with(itemView.context)
                 .load(imageByteArray)
                 .transform(MultiTransformation(RoundedCorners(10)))
                 .placeholder(R.drawable.ic_outline_image_24)
                 .error(R.drawable.ic_outline_image_not_supported_24)
                 .skipMemoryCache(false)
-                .into(sentImageView)
-            sentTimeTextView.text = message.sentTime
+                .into(myImageView)
+            myTimeTextView.text = convertSimpleDateFormatToTime(message.sentTime)[1]
         }
     }
 
-    inner class ReceivedImageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val receivedImageView: ShapeableImageView = itemView.findViewById(R.id.iv_received_image)
-        private val receivedTimeTextView: MaterialTextView = itemView.findViewById(R.id.tv_received_image_time)
-        private val receivedImageUserProfile: ShapeableImageView = itemView.findViewById(R.id.iv_received_image_user_profile)
+    inner class OthersImageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val othersDateTextView: MaterialTextView = itemView.findViewById(R.id.tv_current_date_presentation_in_others_image_viewholder)
+        private val othersImageView: ShapeableImageView = itemView.findViewById(R.id.iv_others_image)
+        private val othersTimeTextView: MaterialTextView = itemView.findViewById(R.id.tv_others_image_time)
+        private val othersImageUserProfile: ShapeableImageView = itemView.findViewById(R.id.iv_others_image_user_profile)
 
         init {
-            receivedImageView.setOnClickListener {
+            othersImageView.setOnClickListener {
                 if (adapterPosition != RecyclerView.NO_POSITION) onReceivedImageClickListener?.onClick(it, adapterPosition)
             }
         }
 
-        fun bind(message: Message, imageByteArray: ByteArray?) {
+        fun bind(message: Message, isDateVisible: Boolean, imageByteArray: ByteArray?) {
+            if (isDateVisible) {
+                othersDateTextView.run {
+                    visibility = View.VISIBLE
+                    text = convertSimpleDateFormatToTime(message.sentTime)[0]
+                }
+            }
             if (imageByteArray != null) Glide.with(itemView.context)
                 .load(imageByteArray)
                 .transform(MultiTransformation(RoundedCorners(10)))
                 .placeholder(R.drawable.ic_outline_image_24)
                 .error(R.drawable.ic_outline_image_not_supported_24)
                 .skipMemoryCache(false)
-                .into(receivedImageView)
-            receivedTimeTextView.text = message.sentTime
+                .into(othersImageView)
+            othersTimeTextView.text = convertSimpleDateFormatToTime(message.sentTime)[1]
 
             if (profileByteArray != null) Glide.with(itemView.context)
                 .load(profileByteArray)
-                .into(receivedImageUserProfile)
+                .into(othersImageUserProfile)
         }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         return when (viewType) {
-            EMPTY_MESSAGE, SENT_MESSAGE -> {
+            EMPTY_MESSAGE, MY_MESSAGE -> {
                 val itemView = LayoutInflater.from(parent.context)
-                    .inflate(R.layout.constraintlayout_sent_message, parent, false)
-                SentMessageViewHolder(itemView = itemView)
+                    .inflate(R.layout.constraintlayout_my_message, parent, false)
+                MyMessageViewHolder(itemView = itemView)
             }
-            SENT_IMAGE -> {
+            MY_IMAGE -> {
                 val itemView = LayoutInflater.from(parent.context)
-                    .inflate(R.layout.constraintlayout_sent_image, parent, false)
-                SentImageViewHolder(itemView = itemView)
+                    .inflate(R.layout.constraintlayout_my_image, parent, false)
+                MyImageViewHolder(itemView = itemView)
             }
-            RECEIVED_MESSAGE -> {
+            OTHERS_MESSAGE -> {
                 val itemView = LayoutInflater.from(parent.context)
-                    .inflate(R.layout.constraintlayout_received_message, parent, false)
-                ReceivedMessageViewHolder(itemView = itemView)
+                    .inflate(R.layout.constraintlayout_others_message, parent, false)
+                OthersMessageViewHolder(itemView = itemView)
             }
             else -> {
                 val itemView = LayoutInflater.from(parent.context)
-                    .inflate(R.layout.constraintlayout_received_image, parent, false)
-                ReceivedImageViewHolder(itemView = itemView)
+                    .inflate(R.layout.constraintlayout_others_image, parent, false)
+                OthersImageViewHolder(itemView = itemView)
             }
         }
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (messageList.isEmpty()) return
+        var isDateVisible = false
+        
+        // 이번 메시지 송신날짜와 이전 메시지 송신날짜가 다르면 isDateVisible 활성화
+        if (position != 0 && convertSimpleDateFormatToTime(messageList[position].sentTime)[0] != convertSimpleDateFormatToTime(messageList[position-1].sentTime)[0]) isDateVisible = true
         when (holder.javaClass) {
-            SentMessageViewHolder::class.java -> (holder as SentMessageViewHolder).bind(messageList[position])
-            SentImageViewHolder::class.java -> (holder as SentImageViewHolder).bind(messageList[position], imageList[position])
-            ReceivedMessageViewHolder::class.java -> (holder as ReceivedMessageViewHolder).bind(messageList[position])
-            ReceivedImageViewHolder::class.java -> (holder as ReceivedImageViewHolder).bind(messageList[position], imageList[position])
+            MyMessageViewHolder::class.java -> (holder as MyMessageViewHolder).bind(messageList[position], isDateVisible)
+            MyImageViewHolder::class.java -> (holder as MyImageViewHolder).bind(messageList[position], isDateVisible, imageList[position])
+            OthersMessageViewHolder::class.java -> (holder as OthersMessageViewHolder).bind(messageList[position], isDateVisible)
+            OthersImageViewHolder::class.java -> (holder as OthersImageViewHolder).bind(messageList[position], isDateVisible, imageList[position])
+
         }
     }
 
@@ -169,29 +203,29 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
 
         return when (senderUID) {
             currentMessage.senderId -> {
-                if (messageList[position].imageUri != "") SENT_IMAGE
-                else SENT_MESSAGE
+                if (messageList[position].messageType == Message.TYPE_IMAGE) MY_IMAGE
+                else MY_MESSAGE
             }
             else -> {
-                if (messageList[position].imageUri != "") RECEIVED_IMAGE
-                else RECEIVED_MESSAGE
+                if (messageList[position].messageType == Message.TYPE_IMAGE) OTHERS_IMAGE
+                else OTHERS_MESSAGE
             }
         }
     }
 
-    fun setOnSentMessageClickListener(onMessageClickListener: OnMessageClickListener) {
-        this.onSentMessageClickListener = onMessageClickListener
+    fun setOnMyMessageClickListener(onMessageClickListener: OnMessageClickListener) {
+        this.onMyMessageClickListener = onMessageClickListener
     }
 
-    fun setOnReceivedMessageClickListener(onMessageClickListener: OnMessageClickListener) {
-        this.onReceivedMessageClickListener = onMessageClickListener
+    fun setOnOthersMessageClickListener(onMessageClickListener: OnMessageClickListener) {
+        this.onOthersMessageClickListener = onMessageClickListener
     }
 
-    fun setOnSentImageClickListener(onImageClickListener: OnImageClickListener) {
-        this.onSentImageClickListener = onImageClickListener
+    fun setOnMyImageClickListener(onImageClickListener: OnImageClickListener) {
+        this.onMyImageClickListener = onImageClickListener
     }
 
-    fun setOnReceivedImageClickListener(onImageClickListener: OnImageClickListener) {
+    fun setOnOthersImageClickListener(onImageClickListener: OnImageClickListener) {
         this.onReceivedImageClickListener = onImageClickListener
     }
 
@@ -205,7 +239,7 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
 
     class MessageDiffUtil : DiffUtil.ItemCallback<Message>() {
         override fun areItemsTheSame(oldItem: Message, newItem: Message): Boolean {
-            return oldItem.messageIndex == newItem.messageIndex
+            return oldItem.messageId == newItem.messageId
         }
 
         override fun areContentsTheSame(oldItem: Message, newItem: Message): Boolean {
@@ -221,5 +255,13 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
     fun setImageProfileUri(byteArray: ByteArray) {
         this.profileByteArray = byteArray
         notifyDataSetChanged()
+    }
+
+    private fun convertSimpleDateFormatToTime(sdf: String): Array<String> {
+        val date = sdf.substring(0, 10).split('-')
+        val dateToRead = date[0] + "년 " + date[1].toInt().toString() + "월 " + date[2].toInt().toString() + "일"
+        val time = sdf.substring(11, 16).split(':')
+        val timeToRead = (if (time[0].toInt() < 12) "오전 " + (if (time[0] != "00") time[0].toInt().toString() else "12") else "오후 " + (if (time[0] != "12") (time[0].toInt()-12).toString() else "12")) + "시 " + time[1] + "분"
+        return arrayOf(dateToRead, timeToRead)
     }
 }

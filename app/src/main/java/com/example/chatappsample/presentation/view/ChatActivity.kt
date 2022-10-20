@@ -4,18 +4,20 @@ import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
-import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.*
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.databinding.DataBindingUtil
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.chatappsample.R
@@ -30,10 +32,7 @@ import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textview.MaterialTextView
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import java.lang.Integer.max
 import java.text.SimpleDateFormat
 import java.util.*
@@ -62,9 +61,6 @@ class ChatActivity : AppCompatActivity() {
     var senderRoom: String? = null
     private var messageText = ""
 
-    private var firstCreation = true
-    private var isMessageSentNow = false
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -84,40 +80,41 @@ class ChatActivity : AppCompatActivity() {
         senderRoom = otherID + myID
         receiverRoom = myID + otherID
 
-        chatViewModel.getReceivedMessage(receiverRoom!!)
+
         chatViewModel.messageTxt.observe(this) { messageText = it }
 
         // 사진 전송
         val getContent =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
                 showProgressBar()
+                sendMessageButton.isEnabled = false
 
                 if (it.resultCode == Activity.RESULT_OK) {
                     val clipDatas = it?.data?.clipData
                     val clipDataSize = clipDatas?.itemCount
-                    val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.KOREA).format(Date(System.currentTimeMillis()))
+                    val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.KOREA).format(Date(System.currentTimeMillis()))
 
                     if (clipDatas == null) {
                         val selectedImageUri = it?.data?.data!!
-                        val index = chatViewModel.getLastMessageIndex(senderRoom!!)+1
                         val message = Message(
-                            messageIndex = index,
-                            message = "사진",
-                            imageUri = selectedImageUri.toString(),
+                            messageId = sdf+UUID.randomUUID().toString(),
+                            messageType = Message.TYPE_IMAGE,
+                            message = selectedImageUri.toString(),
                             senderId = myID!!,
                             sentTime = sdf
                         )
-                        chatViewModel.uploadFile(message, senderRoom!!, receiverRoom!!, onImageSendListener)
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            chatViewModel.uploadFile(message, senderRoom!!, receiverRoom!!, onImageSendListener)
+                        }
                     } else {
                         clipDatas.let { clipData ->
-                            CoroutineScope(Dispatchers.IO).launch {
+                            lifecycleScope.launch(Dispatchers.IO) {
                                 for (i in 0 until clipDataSize!!) {
                                     val selectedImageUri = clipData.getItemAt(i).uri
-                                    val index = chatViewModel.getLastMessageIndex(senderRoom!!) + i + 1
                                     val message = Message(
-                                        messageIndex = index,
-                                        message = "사진",
-                                        imageUri = selectedImageUri.toString(),
+                                        messageId = sdf+UUID.randomUUID().toString(),
+                                        messageType = Message.TYPE_IMAGE,
+                                        message = selectedImageUri.toString(),
                                         senderId = myID!!,
                                         sentTime = sdf
                                     )
@@ -188,42 +185,46 @@ class ChatActivity : AppCompatActivity() {
         })
 
         // 채팅 목록 동기화
-        chatViewModel.messagesList.observe(this@ChatActivity) { list ->
-            if (list.isEmpty()) return@observe
-            if (chatViewModel.getLastMessageIndex(senderRoom!!) == list.last().messageIndex && !firstCreation) {
-                return@observe
+        val messageList = ArrayList<Message>()
+
+        lifecycleScope.launch(Dispatchers.Main) {
+            val fetchMessagesJob = async(Dispatchers.IO) {
+                chatViewModel.fetchMessagesFromExternalDB(receiverRoom!!)
+                chatViewModel.fetchMessagesFromRoomDB(receiverRoom!!)
             }
-            chatViewModel.saveLastMessageIndex(senderRoom!!, list.last().messageIndex)
-            messageAdapter.setUriListSize(list.size)
 
-            CoroutineScope(Dispatchers.IO).launch {
-                delay(300)
-                list.forEachIndexed { idx, currMessage ->
-                    if (currMessage.imageUri.isEmpty()) return@forEachIndexed
+            messageList.addAll(fetchMessagesJob.await())
 
-                    chatViewModel.downloadFile(Uri.parse("${currMessage.senderId}/${currMessage.sentTime}/${currMessage.messageIndex}"), object: OnFileDownloadListener {
-                        override fun onSuccess(byteArray: ByteArray) {
-                            messageAdapter.addImageUriToList(idx, byteArray)
-                            messageAdapter.notifyItemChanged(idx)
-                        }
+            chatViewModel.fetchLastMessageFromRoomDB(receiverRoom!!, lifecycleScope).collect {
+                chatViewModel.addMessageAfterLaunchingActivity()
+                messageList.add(it)
+                messageAdapter.setUriListSize(messageList.size)
+                messageAdapter.submitList(messageList.toMutableList())
 
-                        override fun onFailure(e: Exception) {
-                            e.printStackTrace()
-                        }
+                messageList.forEachIndexed { idx, currMessage ->
+                    if (currMessage.messageType == Message.TYPE_NORMAL_TEXT) return@forEachIndexed
 
-                    })
+                    withContext(Dispatchers.IO) {
+                        chatViewModel.downloadFile(
+                            currMessage,
+                            object : OnFileDownloadListener {
+                                override fun onSuccess(byteArray: ByteArray) {
+                                    messageAdapter.addImageUriToList(idx, byteArray)
+                                    messageAdapter.notifyItemChanged(idx)
+                                }
+
+                                override fun onFailure(e: Exception) {
+                                    e.printStackTrace()
+                                }
+                            })
+                    }
+                }
+                if (messageList.last().senderId == myID!!) {
+                    chattingRecyclerView.scrollToPosition(messageAdapter.messageList.lastIndex)
                 }
             }
 
-            messageAdapter.submitList(list.toMutableList())
 
-            if (firstCreation) chattingRecyclerView.scrollToPosition(messageAdapter.messageList.lastIndex)
-            firstCreation = false
-
-            if (isMessageSentNow) {
-                isMessageSentNow = false
-                chattingRecyclerView.scrollToPosition(messageAdapter.messageList.lastIndex)
-            }
         }
 
         // 이미지 추가 버튼 클릭
@@ -244,56 +245,59 @@ class ChatActivity : AppCompatActivity() {
         sendMessageButton.setOnClickListener {
 
             if (mBinding.etChatMessagebox.text!!.isEmpty()) return@setOnClickListener
+            it.isEnabled = false
 
             val sdf = SimpleDateFormat(
-                "yyyy-MM-dd HH:mm",
+                "yyyy-MM-dd HH:mm:ss.SSS",
                 Locale.KOREA
             ).format(Date(System.currentTimeMillis()))
+
             val messageObject = Message(
-                messageIndex = chatViewModel.getLastMessageIndex(senderRoom!!)+1,
+                messageId = sdf+UUID.randomUUID().toString(),
+                messageType = Message.TYPE_NORMAL_TEXT,
                 message = messageText,
                 senderId = myID ?: "",
                 sentTime = sdf
             )
 
-            chatViewModel.sendMessage(
-                message = messageObject,
-                senderChatRoom = senderRoom!!,
-                receiverChatRoom = receiverRoom!!,
-                onFirebaseCommunicationListener = onMessageSendListener
-            )
+            lifecycleScope.launch(Dispatchers.IO) {
+                chatViewModel.sendMessage(
+                    message = messageObject,
+                    senderChatRoom = senderRoom!!,
+                    receiverChatRoom = receiverRoom!!,
+                    onFirebaseCommunicationListener = onMessageSendListener
+                )
+            }
             messageBox.setText("")
-            isMessageSentNow = true
-            chattingRecyclerView.layoutManager!!.scrollToPosition(messageAdapter.messageList.lastIndex)
         }
 
         // 키보드 생성/파괴 시 채팅 리사이클러뷰 스크롤
         chattingRecyclerView.viewTreeObserver.addOnGlobalLayoutListener {
-            if (chattingRecyclerView.height < originalHeight) chattingRecyclerView.scrollBy(
-                0,
-                keyboardHeight / 2
-            )
-            else chattingRecyclerView.scrollBy(0, -keyboardHeight / 2)
+            println("KEYBOARD HEIGHT : $keyboardHeight\nCHATTING RECYCLERVIEW HEIGHT: ${chattingRecyclerView.height}")
+//            if (chattingRecyclerView.height < originalHeight) chattingRecyclerView.scrollBy(0, keyboardHeight / 2)
+//            else chattingRecyclerView.scrollBy(0, -keyboardHeight / 2)
         }
 
         // 보낸 메시지 클릭리스너 설정
-        messageAdapter.setOnSentMessageClickListener(object :
+        messageAdapter.setOnMyMessageClickListener(object :
             MessageAdapter.OnMessageClickListener {
+            @RequiresApi(Build.VERSION_CODES.P)
             override fun onClick(view: View, position: Int) {
-               println("View: $view, Position: $position")
                 onClickSentMessage(view, position)
             }
         })
 
         // 받은 메시지 클릭리스너 설정
-        messageAdapter.setOnReceivedMessageClickListener(object :
+        messageAdapter.setOnOthersMessageClickListener(object :
             MessageAdapter.OnMessageClickListener {
+            @RequiresApi(Build.VERSION_CODES.P)
             override fun onClick(view: View, position: Int) {
                 onClickReceivedMessage(view, position)
             }
         })
     }
 
+    @RequiresApi(Build.VERSION_CODES.P)
     fun onClickReceivedMessage(v: View, pos: Int) {
         val clipBoardManager = this.getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
         clipBoardManager.clearPrimaryClip()
@@ -302,6 +306,7 @@ class ChatActivity : AppCompatActivity() {
         clipBoardManager.setPrimaryClip(clipboardItem)
     }
 
+    @RequiresApi(Build.VERSION_CODES.P)
     fun onClickSentMessage(v: View, pos: Int) {
         val clipBoardManager = this.getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
         clipBoardManager.clearPrimaryClip()
@@ -323,21 +328,25 @@ class ChatActivity : AppCompatActivity() {
 
     private val onMessageSendListener = object: OnFirebaseCommunicationListener {
         override fun onSuccess() {
+            sendMessageButton.isEnabled = true
         }
 
         override fun onFailure() {
             Toast.makeText(this@ChatActivity, "메시지 전송에 실패하였습니다.", Toast.LENGTH_SHORT).show()
+            sendMessageButton.isEnabled = true
         }
     }
 
     private val onImageSendListener = object: OnFirebaseCommunicationListener {
         override fun onSuccess() {
             hideProgressBar()
+            sendMessageButton.isEnabled = true
         }
 
         override fun onFailure() {
             hideProgressBar()
             Toast.makeText(this@ChatActivity, "메시지 전송에 실패하였습니다.", Toast.LENGTH_SHORT).show()
+            sendMessageButton.isEnabled = true
         }
     }
 

@@ -84,7 +84,10 @@ class LogInActivity : AppCompatActivity() {
                 if (task.isSuccessful) {
                     finish()
                     // Sign in success, update UI with the signed-in user's information
-                    val intent = Intent(this@LogInActivity, MainActivity::class.java)
+                    val intent = Intent(this@LogInActivity, MainActivity::class.java).apply {
+                        println("INTENT: ${task.result.user!!.uid}")
+                        this.putExtra(task.result.user!!.uid, "CURRENT_USER")
+                    }
                     startActivity(intent)
                 } else {
                     // If sign in fails, display a message to the user.

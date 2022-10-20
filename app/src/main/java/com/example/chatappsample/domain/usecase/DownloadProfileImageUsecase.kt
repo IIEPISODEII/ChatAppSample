@@ -7,7 +7,7 @@ import javax.inject.Inject
 
 class DownloadProfileImageUsecase @Inject constructor(private val repo : UserRepository) {
 
-    fun downloadProfileImage(userID: String, onFileDownloadListener: OnFileDownloadListener) {
+    operator fun invoke(userID: String, onFileDownloadListener: OnFileDownloadListener) {
         repo.downloadProfileImage(userID, onFileDownloadListener)
     }
 }

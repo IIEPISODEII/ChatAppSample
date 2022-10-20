@@ -9,7 +9,7 @@ import com.example.chatappsample.domain.repository.ChatRepository
 import javax.inject.Inject
 
 class DownloadFileUsecase @Inject constructor(private val repo: ChatRepository) {
-    operator fun invoke(uri: Uri, onFileDownloadListener: OnFileDownloadListener) {
-        repo.downloadFile(uri, onFileDownloadListener)
+    operator fun invoke(message: Message, onFileDownloadListener: OnFileDownloadListener) {
+        repo.downloadFile(message, onFileDownloadListener)
     }
 }

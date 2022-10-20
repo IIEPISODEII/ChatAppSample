@@ -1,6 +1,5 @@
 package com.example.chatappsample.presentation.viewmodel
 
-import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -17,24 +16,34 @@ import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.AuthResult
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.DatabaseException
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.lang.Exception
 import javax.inject.Inject
 
 
 @HiltViewModel
 class UserViewModel @Inject constructor(
     private val getCurrentUserUsecase: GetCurrentUserUsecase,
-    private val getAllUsersUsecase: GetAllUsersUsecase,
+    private val receiveAllUsersFromExternalDBUsecase: ReceiveAllUsersFromExternalDBUsecase,
+    private val getAllUsersUsecase: GetAllUsersFromRoomDBUsecase,
     private val signOutUsecase: SignOutUsecase,
     private val signUpUsecase: SignUpUsecase,
     private val setAutoLoginCheckUsecase: SetAutoLoginCheckUsecase,
     private val updateCurrentUserUsecase: UpdateCurrentUserUsercase,
     private val downloadProfileImageUsecase: DownloadProfileImageUsecase,
-    private val takeLastMessageUsecase: TakeLastMessageUsecase,
+    private val takeLastMessageUsecase: FetchLastMessageUsecase,
 ) : ViewModel() {
+
+    private var currentUserId: String = ""
+    fun setCurrentUserId(id: String) {
+        currentUserId = id
+        viewModelScope.launch {
+            getAllUsers().collect {
+                _allUsersList.postValue(it)
+            }
+        }
+    }
 
     private val _currentUser = MutableLiveData<User?>()
     val currentUser: LiveData<User?>
@@ -46,7 +55,6 @@ class UserViewModel @Inject constructor(
                 val user =
                     dataSnapshot.getValue(User::class.java) ?: User()
                 if (user.uid == "") return
-                getAllUsers(currentUserId = user.uid)
                 _currentUser.postValue(user)
             }
 
@@ -55,49 +63,24 @@ class UserViewModel @Inject constructor(
             override fun <T> onFailure(error: T) {
                 if (error is DatabaseError) Log.e("UserViewModel", error.message)
             }
-
         })
     }
 
+    private val _allUsersList = MutableLiveData<List<User>>()
+    val allUsersList: LiveData<List<User>>
+        get() = _allUsersList
 
-    private val _allUsers = MutableLiveData<ArrayList<User>>()
-    val allUsers: LiveData<ArrayList<User>>
-        get() = _allUsers
-
-    fun getAllUsers(currentUserId: String) {
-        viewModelScope.launch {
-            getAllUsersUsecase(object : OnGetDataListener {
-                override fun onSuccess(dataSnapshot: DataSnapshot) {
-                    val userList = arrayListOf<User>()
-                    for (snapShot in dataSnapshot.children) {
-                        val user = snapShot.getValue(User::class.java)
-
-                        if ((user != null) && (user.uid != currentUserId)) {
-                            userList.add(user)
-                        }
-                    }
-
-                    _allUsers.postValue(userList)
-                }
-
-                override fun onStart() {}
-
-                override fun <T> onFailure(error: T) {
-                    if (error is DatabaseError) Log.e("UserViewModel", error.message)
-                    else return
-                }
-            })
-        }
+    private suspend fun getAllUsers(): Flow<List<User>> {
+        return getAllUsersUsecase().map { list -> list.filter { user -> user.uid != currentUserId } }
     }
 
+    fun receiveAllUsersFromExternalDB() = receiveAllUsersFromExternalDBUsecase(viewModelScope)
 
     private val _registrationStatus = MutableLiveData<Resource<AuthResult?>>()
     val registrationStatus: LiveData<Resource<AuthResult?>>
         get() = _registrationStatus
 
     private val _isSignedUp = MutableLiveData(false)
-    val isSignedUp: LiveData<Boolean>
-        get() = _isSignedUp
 
     fun signOut() {
         if (signOutUsecase.signOut()) _currentUser.value = null
@@ -127,11 +110,11 @@ class UserViewModel @Inject constructor(
     }
 
     fun updateCurrentUser(user: User, changeProfileImage: Boolean) {
-        updateCurrentUserUsecase.invoke(user, changeProfileImage)
+        updateCurrentUserUsecase(user, changeProfileImage)
     }
 
     fun downloadProfileImage(user: User, onFileDownloadListener: OnFileDownloadListener) {
-        downloadProfileImageUsecase.downloadProfileImage(user.uid, onFileDownloadListener)
+        downloadProfileImageUsecase(user.uid, onFileDownloadListener)
     }
 
     private val _isProfileEditMode = MutableLiveData(false)
@@ -142,7 +125,14 @@ class UserViewModel @Inject constructor(
         _isProfileEditMode.postValue(mode)
     }
 
-    fun takeLastMessage(user: User, listener: OnGetDataListener) {
-        takeLastMessageUsecase(currentUser.value!!.uid + user.uid, listener)
+    suspend fun takeLastMessage(user: User): Flow<Message> {
+        return try {
+            takeLastMessageUsecase(currentUser.value!!.uid + user.uid)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            flow {
+                emit(Message())
+            }
+        }
     }
 }

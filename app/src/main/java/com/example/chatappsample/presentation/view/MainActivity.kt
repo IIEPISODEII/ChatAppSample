@@ -1,18 +1,16 @@
 package com.example.chatappsample.presentation.view
 
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
 import android.view.WindowManager
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.viewpager2.adapter.FragmentStateAdapter
-import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
 import com.example.chatappsample.R
 import com.example.chatappsample.databinding.ActivityMainBinding
@@ -20,7 +18,7 @@ import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
 import com.example.chatappsample.domain.dto.User
 import com.example.chatappsample.presentation.viewmodel.UserViewModel
 import com.google.android.material.imageview.ShapeableImageView
-import com.google.android.material.navigation.NavigationBarView
+import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
 import java.lang.Exception
 
@@ -28,14 +26,21 @@ import java.lang.Exception
 class MainActivity : FragmentActivity() {
 
     val viewModel: UserViewModel by lazy { ViewModelProvider(this)[UserViewModel::class.java] }
-    private val pagerAdapter = PagerAdapter(this)
     private lateinit var mBinding: ActivityMainBinding
     private var currentUser: User? = null
-    private val userListFragment = UserListFragment()
+    private val chatRoomsListFragment = ChatRoomsListFragment()
     private val mypageFragment = MypageFragment()
+    private val mainPagerAdapter = MainPagerAdapter(this)
+
+    private val mainTabItemList = listOf(
+        MainTabItem(chatRoomsListFragment, "채팅 목록", R.drawable.ic_baseline_chat_bubble_24),
+        MainTabItem(mypageFragment, "마이페이지", R.drawable.ic_baseline_person_24)
+    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        viewModel.setCurrentUserId(intent.getStringExtra("CURRENT_USER")!!)
 
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
 
@@ -43,7 +48,6 @@ class MainActivity : FragmentActivity() {
         mBinding.viewModel = this@MainActivity.viewModel
         mBinding.lifecycleOwner = this@MainActivity
 
-        mBinding.vpager2Main.adapter = pagerAdapter
         viewModel.currentUser.observe(this) {
             if (it != null && currentUser?.profileImage != it.profileImage) {
                 viewModel.downloadProfileImage(it, object: OnFileDownloadListener {
@@ -67,32 +71,17 @@ class MainActivity : FragmentActivity() {
 
             if (it != null) currentUser = it
         }
-        mBinding.vpager2Main.registerOnPageChangeCallback(object: ViewPager2.OnPageChangeCallback() {
-            override fun onPageSelected(position: Int) {
-                super.onPageSelected(position)
+        mBinding.viewpager2Main.adapter = mainPagerAdapter
 
-                when (position) {
-                    1 -> mBinding.bottomnaviMainNavigation.selectedItemId = R.id.menu_main_my_page
-                    else -> mBinding.bottomnaviMainNavigation.selectedItemId = R.id.menu_main_chatting_list
-                }
-            }
-        })
+        TabLayoutMediator(mBinding.tablayoutMainTablayout, mBinding.viewpager2Main, TabLayoutMediator.TabConfigurationStrategy { tab, position ->
+            tab.text = mainTabItemList[position].tabString
+            tab.icon = AppCompatResources.getDrawable(this, mainTabItemList[position].tabIconDrawableId)
+        }).attach()
+    }
 
-        mBinding.bottomnaviMainNavigation.setOnItemSelectedListener(object: NavigationBarView.OnItemSelectedListener {
-            override fun onNavigationItemSelected(item: MenuItem): Boolean {
-                when (item.itemId) {
-                    R.id.menu_main_chatting_list -> {
-                        mBinding.vpager2Main.currentItem = 0
-
-                        return true
-                    }
-                    else -> {
-                        mBinding.vpager2Main.currentItem = 1
-                        return true
-                    }
-                }
-            }
-        })
+    override fun onResume() {
+        super.onResume()
+        println("CURRENT USER ID ON ONRESUME() : ${intent.getStringExtra("CURRENT_USER")}")
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -117,15 +106,18 @@ class MainActivity : FragmentActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    inner class PagerAdapter(activity: FragmentActivity) : FragmentStateAdapter(activity) {
-        override fun getItemCount(): Int = 2
+    inner class MainPagerAdapter(fragmentActivity: FragmentActivity) : FragmentStateAdapter(fragmentActivity) {
+        override fun getItemCount(): Int = mainTabItemList.size
 
-        override fun createFragment(position: Int): Fragment {
-            return when (position%itemCount) {
-                0 -> { userListFragment }
-                else -> { mypageFragment }
-            }
-        }
-
+        override fun createFragment(position: Int): Fragment = mainTabItemList[position].fragment
     }
+
+    /**
+     * data class including components needed to present tab & viewpager2 in this activity.
+     *
+     * @property fragment Fragment to inflate by selecting tab
+     * @property tabString Tab Title string
+     * @property tabIconDrawableId  Tab Icon drawable id
+     */
+    data class MainTabItem(val fragment: Fragment, val tabString: String, val tabIconDrawableId: Int)
 }

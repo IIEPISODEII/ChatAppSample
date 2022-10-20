@@ -39,6 +39,7 @@ class MypageFragment : Fragment() {
         mBinding.viewModel = viewModel
 
         viewModel.currentUser.observe(this.viewLifecycleOwner) {
+            println("USER PROFILE: ${it?.profileImage}")
             if (it != null && myProfile?.profileImage != it.profileImage) {
                 Glide
                     .with(requireContext())

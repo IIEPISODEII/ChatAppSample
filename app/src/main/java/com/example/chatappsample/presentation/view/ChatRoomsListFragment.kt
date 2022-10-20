@@ -1,5 +1,6 @@
 package com.example.chatappsample.presentation.view
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -9,6 +10,7 @@ import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.example.chatappsample.R
@@ -21,8 +23,11 @@ import com.example.chatappsample.presentation.view.adapter.MainUserAdapter
 import com.example.chatappsample.presentation.viewmodel.UserViewModel
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
 
-class UserListFragment: Fragment() {
+class ChatRoomsListFragment: Fragment() {
 
     private val viewModel by lazy { ViewModelProvider(requireActivity())[UserViewModel::class.java] }
     private lateinit var binding: FragmentChattingListBinding
@@ -38,56 +43,49 @@ class UserListFragment: Fragment() {
         binding = DataBindingUtil.inflate(inflater, R.layout.fragment_chatting_list, container, false)
         binding.lifecycleOwner = this.viewLifecycleOwner
         binding.viewModel = ViewModelProvider(requireActivity())[UserViewModel::class.java]
-
         return binding.root
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 
         // Initialize recyclerview
         rvAdapter = MainUserAdapter(currentUserId = currentUserId, userList = userList)
         binding.viewModel!!.getCurrentUserInformation()
-        binding.viewModel!!.currentUser.observe(this.viewLifecycleOwner) {
+        binding.viewModel!!.currentUser.observe(viewLifecycleOwner) {
             currentUserId = it?.uid ?: ""
             rvAdapter.currentUserId = currentUserId
         }
         binding.rvMainUserRecyclerview.adapter = rvAdapter
-        binding.viewModel!!.allUsers.observe(this.viewLifecycleOwner) {
-            rvAdapter.userList = it
-            rvAdapter.userList.forEachIndexed { position, user ->
-                viewModel.takeLastMessage(user, object: OnGetDataListener {
-                    override fun onSuccess(dataSnapshot: DataSnapshot) {
-                        dataSnapshot.children.forEach { snapshot ->
-                            val currentSnapshot = snapshot.getValue(Message::class.java)
 
-                            if (currentSnapshot != null) {
-                                rvAdapter.addLastMessageToList(user, currentSnapshot)
-                                rvAdapter.notifyItemChanged(position)
-                            }
+        binding.viewModel!!.receiveAllUsersFromExternalDB()
+
+        binding.viewModel!!.allUsersList.observe(viewLifecycleOwner) {
+            val userList = it as ArrayList<User>
+            rvAdapter.userList = userList
+            rvAdapter.userList.forEachIndexed { index, user ->
+                lifecycleScope.launch {
+                    viewModel.takeLastMessage(user).collect { message ->
+                        rvAdapter.addLastMessageToList(user, message)
+                        rvAdapter.notifyItemChanged(index)
+                    }
+                }
+                if (user.profileImage.isNotEmpty()) {
+                    viewModel.downloadProfileImage(user, object: OnFileDownloadListener {
+                        override fun onSuccess(byteArray: ByteArray) {
+                            rvAdapter.addProfileImageByteArrayToList(user, byteArray)
+                            rvAdapter.notifyItemChanged(index)
                         }
-                    }
 
-                    override fun onStart() {}
-
-                    override fun <T> onFailure(error: T) {
-                        if (error is DatabaseError) Log.d("FIREBASE ERROR", (error as DatabaseError).message)
-                    }
-                })
-
-                viewModel.downloadProfileImage(user, object: OnFileDownloadListener {
-                    override fun onSuccess(byteArray: ByteArray) {
-                        rvAdapter.addProfileImageByteArrayToList(user, byteArray)
-                        rvAdapter.notifyItemChanged(position)
-                    }
-
-                    override fun onFailure(e: Exception) {
-                        e.printStackTrace()
-                    }
-
-                })
+                        override fun onFailure(e: Exception) {
+                            e.printStackTrace()
+                        }
+                    })
+                }
+                rvAdapter.notifyDataSetChanged()
             }
-            rvAdapter.notifyDataSetChanged()
         }
+
         rvAdapter.setOnChatRoomClickListener(object: MainUserAdapter.ChatRoomClickListener {
             override fun onChatRoomClick(view: View, position: Int) {
                 val intent = Intent(requireContext(), ChatActivity::class.java).apply {
@@ -103,5 +101,4 @@ class UserListFragment: Fragment() {
 
         super.onViewCreated(view, savedInstanceState)
     }
-
 }

@@ -5,41 +5,47 @@ import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
 import com.example.chatappsample.domain.`interface`.OnFirebaseCommunicationListener
 import com.example.chatappsample.domain.`interface`.OnGetDataListener
 import com.example.chatappsample.domain.dto.Message
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
 
 interface ChatRepository {
 
-    fun receiveAllMessages(
+    suspend fun fetchMessagesFromExternalDB(
         chatRoom: String,
-        listener: OnGetDataListener
+        coroutineScope: CoroutineScope
     )
 
-    fun receiveAdditionalMessage(
+    suspend fun fetchMessagesFromRoomDBAsFlow(
+        chatRoom: String,
+        queriesSize: Int
+    ) : Flow<List<Message>>
+
+    suspend fun fetchMessagesFromRoomDB(
         chatRoom: String,
         queriesSize: Int,
-        listener: OnGetDataListener
-    )
+        offset: Int
+    ) : List<Message>
 
-    fun sendMessage(
+    suspend fun sendMessage(
         message: Message,
-        senderChatRoom: String,
-        receiverChatRoom: String,
-        onFirebaseCommunicationListener: OnFirebaseCommunicationListener
-    ) : Boolean
-
-    fun uploadFile(
-        message: Message,
-        senderChatRoom: String,
-        receiverChatRoom: String,
+        myChatRoom: String,
+        yourChatRoom: String,
         onFirebaseCommunicationListener: OnFirebaseCommunicationListener
     )
 
-    fun takeLastMessageOfChatRoom(
-        chatRoom: String,
-        listener: OnGetDataListener
+    suspend fun uploadFile(
+        message: Message,
+        myChatRoom: String,
+        yourChatRoom: String,
+        onFirebaseCommunicationListener: OnFirebaseCommunicationListener
     )
+
+    suspend fun takeLastMessageOfChatRoom(
+        chatRoom: String
+    ): Flow<Message>
 
     fun downloadFile(
-        uri: Uri,
+        message: Message,
         onFileDownloadListener: OnFileDownloadListener
     )
 }

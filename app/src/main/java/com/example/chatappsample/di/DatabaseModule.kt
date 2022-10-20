@@ -2,7 +2,9 @@ package com.example.chatappsample.di
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.room.Room
 import com.example.chatappsample.BaseApplication
+import com.example.chatappsample.data.repository.AppDatabase
 import com.example.chatappsample.domain.repository.SharedPreferenceRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
@@ -34,5 +36,11 @@ class DatabaseModule {
     @Provides
     fun provideFirebaseStorage(): FirebaseStorage {
         return FirebaseStorage.getInstance()
+    }
+
+    @Singleton
+    @Provides
+    fun provideRoomDatabase(@ApplicationContext context: Context) : AppDatabase {
+        return AppDatabase.getInstance(context)
     }
 }

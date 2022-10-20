@@ -3,19 +3,20 @@ package com.example.chatappsample.domain.usecase
 import com.example.chatappsample.domain.`interface`.OnFirebaseCommunicationListener
 import com.example.chatappsample.domain.dto.Message
 import com.example.chatappsample.domain.repository.ChatRepository
+import kotlinx.coroutines.CoroutineScope
 import javax.inject.Inject
 
 class SendMessageUsecase @Inject constructor(private val chatRepository: ChatRepository) {
-    fun sendMessage(
+    suspend operator fun invoke(
         message: Message,
         senderChatRoom: String,
         receiverChatRoom: String,
         onFirebaseCommunicationListener: OnFirebaseCommunicationListener
-    ) : Boolean {
-        return chatRepository.sendMessage(
+    ) {
+        chatRepository.sendMessage(
             message = message,
-            senderChatRoom = senderChatRoom,
-            receiverChatRoom = receiverChatRoom,
+            myChatRoom = senderChatRoom,
+            yourChatRoom = receiverChatRoom,
             onFirebaseCommunicationListener = onFirebaseCommunicationListener
         )
     }

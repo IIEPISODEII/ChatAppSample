@@ -52,12 +52,4 @@ class SharedPreferenceRepositoryImpl @Inject constructor(
     override fun setPassword(value: String) {
         edit.putString(SharedPreferenceRepository.SETTIGNS_PASSWORD, value).commit()
     }
-
-    override fun getLastMessageIndex(chatRoom: String): Int {
-        return mSharedPref.getInt(chatRoom, 0)
-    }
-
-    override fun saveLastMessageIndex(chatRoom: String, index: Int) {
-        edit.putInt(chatRoom, index).commit()
-    }
 }

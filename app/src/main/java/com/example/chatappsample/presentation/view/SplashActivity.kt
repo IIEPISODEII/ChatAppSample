@@ -34,7 +34,9 @@ class SplashActivity: AppCompatActivity() {
                 .addOnCompleteListener(this) { task ->
                     if (task.isSuccessful) {
                         finish()
-                        val intent = Intent(this@SplashActivity, MainActivity::class.java)
+                        val intent = Intent(this@SplashActivity, MainActivity::class.java).apply {
+                            putExtra("CURRENT_USER", task.result.user!!.uid)
+                        }
                         startActivity(intent)
                     } else {
                         Toast.makeText(this@SplashActivity, "로그인에 실패했습니다.", Toast.LENGTH_SHORT).show()

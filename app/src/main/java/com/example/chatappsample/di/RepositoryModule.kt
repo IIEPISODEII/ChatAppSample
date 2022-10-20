@@ -3,6 +3,7 @@ package com.example.chatappsample.di
 import android.content.Context
 import android.content.SharedPreferences
 import com.example.chatappsample.BaseApplication
+import com.example.chatappsample.data.repository.AppDatabase
 import com.example.chatappsample.data.repository.ChatRepositoryImpl
 import com.example.chatappsample.data.repository.SharedPreferenceRepositoryImpl
 import com.example.chatappsample.data.repository.UserRepositoryImpl
@@ -25,14 +26,14 @@ class RepositoryModule {
 
     @Singleton
     @Provides
-    fun provideUserRepository(firebaseDatabase: FirebaseDatabase, firebaseAuth: FirebaseAuth, firebaseStorage: FirebaseStorage) : UserRepository {
-        return UserRepositoryImpl(firebaseDatabase, firebaseAuth, firebaseStorage)
+    fun provideUserRepository(firebaseDatabase: FirebaseDatabase, firebaseAuth: FirebaseAuth, firebaseStorage: FirebaseStorage, userRoom: AppDatabase) : UserRepository {
+        return UserRepositoryImpl(firebaseDatabase, firebaseAuth, firebaseStorage, userRoom)
     }
 
     @Singleton
     @Provides
-    fun provideChatRepository(firebaseDatabase: FirebaseDatabase, firebaseStorage: FirebaseStorage) : ChatRepository {
-        return ChatRepositoryImpl(firebaseDatabase, firebaseStorage)
+    fun provideChatRepository(firebaseDatabase: FirebaseDatabase, firebaseStorage: FirebaseStorage, messageRoom: AppDatabase) : ChatRepository {
+        return ChatRepositoryImpl(firebaseDatabase, firebaseStorage, messageRoom)
     }
 
     @Singleton
