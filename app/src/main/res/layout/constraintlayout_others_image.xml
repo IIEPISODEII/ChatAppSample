@@ -9,17 +9,18 @@
         android:id="@+id/tv_current_date_presentation_in_others_image_viewholder"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        android:background="@drawable/layout_current_date_presentation"
         android:paddingHorizontal="15dp"
         android:paddingVertical="5dp"
-        android:layout_marginBottom="10dp"
         android:text="Current Date"
         android:textColor="#0F0F0F"
         android:textSize="12dp"
-        android:background="@drawable/layout_current_date_presentation"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/iv_others_image"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/iv_others_image"/>
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/iv_others_image_user_profile"
@@ -39,8 +40,8 @@
         android:background="@color/light_grey_dfdfdf"
         android:src="@drawable/ic_outline_image_24"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_current_date_presentation_in_others_image_viewholder"
-        app:layout_constraintStart_toEndOf="@id/iv_others_image_user_profile" />
+        app:layout_constraintStart_toEndOf="@id/iv_others_image_user_profile"
+        app:layout_constraintTop_toBottomOf="@id/tv_current_date_presentation_in_others_image_viewholder" />
 
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/tv_others_image_time"

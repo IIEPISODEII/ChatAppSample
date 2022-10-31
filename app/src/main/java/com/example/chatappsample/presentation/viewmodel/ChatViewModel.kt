@@ -3,6 +3,7 @@ package com.example.chatappsample.presentation.viewmodel
 import androidx.databinding.Bindable
 import androidx.databinding.Observable
 import androidx.databinding.PropertyChangeRegistry
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -11,8 +12,7 @@ import com.example.chatappsample.domain.`interface`.OnFirebaseCommunicationListe
 import com.example.chatappsample.domain.dto.Message
 import com.example.chatappsample.domain.usecase.*
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
@@ -28,9 +28,30 @@ class ChatViewModel @Inject constructor(
     private val downloadProfileImageUsecase: DownloadProfileImageUsecase
 ) : ViewModel(), Observable {
 
+    companion object {
+        private var receiverRoom = ""
+
+        fun setReceiverRoom(room: String) {
+            receiverRoom = room
+        }
+    }
+
     @Bindable
     val messageTxt = MutableLiveData<String>()
 
+    private val _messageList = MutableLiveData<MutableList<Message>>(mutableListOf())
+    val messageList: LiveData<MutableList<Message>>
+        get() = _messageList
+    private val newlyMessageList = mutableListOf<Message>()
+    private val preMessageList = mutableListOf<Message>()
+
+    init {
+        viewModelScope.launch(Dispatchers.IO) {
+            fetchMessagesFromExternalDB(receiverRoom)
+            fetchMessagesFromRoomDB(receiverRoom)
+            fetchLastMessageFromRoomDB(receiverRoom)
+        }
+    }
 
     suspend fun sendMessage(
         message: Message,
@@ -46,23 +67,40 @@ class ChatViewModel @Inject constructor(
         )
     }
 
-    suspend fun fetchMessagesFromExternalDB(chatRoom: String) {
+    private suspend fun fetchMessagesFromExternalDB(chatRoom: String) {
         fetchMessagesFromExternalDBUsecase(chatRoom, viewModelScope)
     }
 
-    private var messagesAfterLaunchingActivity = 1
-    private var queriesSize = 0
-    suspend fun fetchMessagesFromRoomDB(chatRoom: String): List<Message> {
-        queriesSize += 50
-        return fetchMessageFromRoomDBUsecase(chatRoom, queriesSize, messagesAfterLaunchingActivity)
+    fun setPreMessageList(messageList: List<Message>) {
+        this.preMessageList.clear()
+        this.preMessageList.addAll(messageList)
     }
 
-    suspend fun fetchLastMessageFromRoomDB(chatRoom: String, coroutineScope: CoroutineScope): StateFlow<Message> {
-        return fetchLastMessageUsecase(chatRoom).stateIn(coroutineScope)
+    fun getPreMessageList() = this.preMessageList
+
+    private var receivedMessages = 1
+    private val basicMessageDownloadSize = 20
+    private var offsetSize = 0
+    suspend fun fetchMessagesFromRoomDB(chatRoom: String) {
+        offsetSize += basicMessageDownloadSize
+
+        val oldMessages = fetchMessageFromRoomDBUsecase(chatRoom, basicMessageDownloadSize, offsetSize - basicMessageDownloadSize + receivedMessages)
+
+        newlyMessageList.addAll(0, oldMessages)
+        if (newlyMessageList.isEmpty()) fetchLastMessageFromRoomDB(chatRoom)
+        _messageList.postValue(newlyMessageList)
     }
 
-    fun addMessageAfterLaunchingActivity() {
-        messagesAfterLaunchingActivity++
+    private suspend fun fetchLastMessageFromRoomDB(chatRoom: String) {
+        addMessageAfterLaunchingActivity()
+        fetchLastMessageUsecase(chatRoom).stateIn(viewModelScope).collect {
+            newlyMessageList.add(it)
+            _messageList.postValue(newlyMessageList)
+        }
+    }
+
+    private fun addMessageAfterLaunchingActivity() {
+        receivedMessages++
     }
 
     private val callbacks: PropertyChangeRegistry by lazy { PropertyChangeRegistry() }

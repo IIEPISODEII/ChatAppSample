@@ -44,12 +44,8 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
         }
 
         fun bind(message: Message, isDateVisible: Boolean) {
-            if (isDateVisible) {
-                myDateTextView.run {
-                    visibility = View.VISIBLE
-                    text = convertSimpleDateFormatToTime(message.sentTime)[0]
-                }
-            }
+            myDateTextView.text = convertSimpleDateFormatToTime(message.sentTime)[0]
+            myDateTextView.visibility = if (isDateVisible) View.VISIBLE else View.GONE
             myMessageTextView.text = message.message
             myTimeTextView.text = convertSimpleDateFormatToTime(message.sentTime)[1]
         }
@@ -68,12 +64,8 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
         }
 
         fun bind(message: Message, isDateVisible: Boolean) {
-            if (isDateVisible) {
-                othersDateTextView.run {
-                    visibility = View.VISIBLE
-                    text = convertSimpleDateFormatToTime(message.sentTime)[0]
-                }
-            }
+            othersDateTextView.text = convertSimpleDateFormatToTime(message.sentTime)[0]
+            othersDateTextView.visibility = if (isDateVisible) View.VISIBLE else View.GONE
             othersMessageTextView.text = message.message
             othersTimeTextView.text = convertSimpleDateFormatToTime(message.sentTime)[1]
 
@@ -95,12 +87,8 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
         }
 
         fun bind(message: Message, isDateVisible: Boolean, imageByteArray: ByteArray?) {
-            if (isDateVisible) {
-                myDateTextView.run {
-                    visibility = View.VISIBLE
-                    text = convertSimpleDateFormatToTime(message.sentTime)[0]
-                }
-            }
+            myDateTextView.text = convertSimpleDateFormatToTime(message.sentTime)[0]
+            myDateTextView.visibility = if (isDateVisible) View.VISIBLE else View.GONE
             if (imageByteArray != null) Glide.with(itemView.context)
                 .load(imageByteArray)
                 .transform(MultiTransformation(RoundedCorners(10)))
@@ -125,12 +113,8 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
         }
 
         fun bind(message: Message, isDateVisible: Boolean, imageByteArray: ByteArray?) {
-            if (isDateVisible) {
-                othersDateTextView.run {
-                    visibility = View.VISIBLE
-                    text = convertSimpleDateFormatToTime(message.sentTime)[0]
-                }
-            }
+            othersDateTextView.text = convertSimpleDateFormatToTime(message.sentTime)[0]
+            othersDateTextView.visibility = if (isDateVisible) View.VISIBLE else View.GONE
             if (imageByteArray != null) Glide.with(itemView.context)
                 .load(imageByteArray)
                 .transform(MultiTransformation(RoundedCorners(10)))
@@ -174,15 +158,13 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (messageList.isEmpty()) return
         var isDateVisible = false
-        
         // 이번 메시지 송신날짜와 이전 메시지 송신날짜가 다르면 isDateVisible 활성화
-        if (position != 0 && convertSimpleDateFormatToTime(messageList[position].sentTime)[0] != convertSimpleDateFormatToTime(messageList[position-1].sentTime)[0]) isDateVisible = true
+        if (position == 0 || convertSimpleDateFormatToTime(messageList[position].sentTime)[0] != convertSimpleDateFormatToTime(messageList[position-1].sentTime)[0]) isDateVisible = true
         when (holder.javaClass) {
             MyMessageViewHolder::class.java -> (holder as MyMessageViewHolder).bind(messageList[position], isDateVisible)
             MyImageViewHolder::class.java -> (holder as MyImageViewHolder).bind(messageList[position], isDateVisible, imageList[position])
             OthersMessageViewHolder::class.java -> (holder as OthersMessageViewHolder).bind(messageList[position], isDateVisible)
             OthersImageViewHolder::class.java -> (holder as OthersImageViewHolder).bind(messageList[position], isDateVisible, imageList[position])
-
         }
     }
 
@@ -199,15 +181,16 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
 
     override fun getItemViewType(position: Int): Int {
         if (messageList.isEmpty()) return EMPTY_MESSAGE
+
         val currentMessage = messageList[position]
 
         return when (senderUID) {
             currentMessage.senderId -> {
-                if (messageList[position].messageType == Message.TYPE_IMAGE) MY_IMAGE
+                if (currentMessage.messageType == Message.TYPE_IMAGE) MY_IMAGE
                 else MY_MESSAGE
             }
             else -> {
-                if (messageList[position].messageType == Message.TYPE_IMAGE) OTHERS_IMAGE
+                if (currentMessage.messageType == Message.TYPE_IMAGE) OTHERS_IMAGE
                 else OTHERS_MESSAGE
             }
         }
@@ -258,10 +241,9 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
     }
 
     private fun convertSimpleDateFormatToTime(sdf: String): Array<String> {
-        val date = sdf.substring(0, 10).split('-')
-        val dateToRead = date[0] + "년 " + date[1].toInt().toString() + "월 " + date[2].toInt().toString() + "일"
-        val time = sdf.substring(11, 16).split(':')
-        val timeToRead = (if (time[0].toInt() < 12) "오전 " + (if (time[0] != "00") time[0].toInt().toString() else "12") else "오후 " + (if (time[0] != "12") (time[0].toInt()-12).toString() else "12")) + "시 " + time[1] + "분"
+        val dateToRead = if (sdf.isEmpty()) "" else sdf.substring(0, if (sdf.lastIndex >= 10) 10 else sdf.lastIndex).split('-').joinToString(".") { it.toInt().toString() }
+        val time = sdf.substring(11, 16).split(':').map { it.toInt().toString() }
+        val timeToRead = (if (time[0].toInt() < 12) "오전 " + (if (time[0] != "0") time[0] else "12") else "오후 " + (if (time[0] != "12") (time[0].toInt()-12).toString() else "12")) + ":" + time[1].padStart(2, '0')
         return arrayOf(dateToRead, timeToRead)
     }
 }

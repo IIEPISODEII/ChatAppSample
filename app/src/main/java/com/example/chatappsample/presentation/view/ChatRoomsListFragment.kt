@@ -20,6 +20,7 @@ import com.example.chatappsample.domain.`interface`.OnGetDataListener
 import com.example.chatappsample.domain.dto.Message
 import com.example.chatappsample.domain.dto.User
 import com.example.chatappsample.presentation.view.adapter.MainUserAdapter
+import com.example.chatappsample.presentation.viewmodel.ChatViewModel
 import com.example.chatappsample.presentation.viewmodel.UserViewModel
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -93,6 +94,7 @@ class ChatRoomsListFragment: Fragment() {
                     putExtra(ChatActivity.OTHER_UID, rvAdapter.userList[position].uid)
                     putExtra(ChatActivity.CURRENT_UID, currentUserId)
                 }
+                ChatViewModel.setReceiverRoom(currentUserId + rvAdapter.userList[position].uid)
 
                 requireContext().startActivity(intent)
             }

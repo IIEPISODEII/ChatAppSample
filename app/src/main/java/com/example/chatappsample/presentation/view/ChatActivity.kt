@@ -6,6 +6,7 @@ import android.content.ClipboardManager
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.*
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
@@ -44,7 +45,6 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var mBinding: ActivityChatBinding
 
     private val drawerDrawerLayout by lazy { this.findViewById<DrawerLayout>(R.id.drawer_chat) }
-    private val partitionConstraintLayout by lazy { this.findViewById<ConstraintLayout>(R.id.drawer_chat_partition) }
     private val toolbar by lazy { this.findViewById<MaterialToolbar>(R.id.tlb_chat_toolbar) }
     private val toolbarHomeButton by lazy { this.findViewById<ShapeableImageView>(R.id.iv_chat_home) }
     private val toolbarMenuButton by lazy { this.findViewById<ShapeableImageView>(R.id.iv_chat_menu) }
@@ -60,7 +60,9 @@ class ChatActivity : AppCompatActivity() {
     var receiverRoom: String? = null
     var senderRoom: String? = null
     private var messageText = ""
+    private var isLoading = false
 
+    @RequiresApi(Build.VERSION_CODES.M)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -80,8 +82,19 @@ class ChatActivity : AppCompatActivity() {
         senderRoom = otherID + myID
         receiverRoom = myID + otherID
 
+        // 뷰모델 기본 리스너 설정
+        chatViewModel.run {
+            messageTxt.observe(this@ChatActivity) { messageText = it }
+            downloadProfileImage(otherID!!, object: OnFileDownloadListener {
+                override fun onSuccess(byteArray: ByteArray) {
+                    messageAdapter.setImageProfileUri(byteArray)
+                }
 
-        chatViewModel.messageTxt.observe(this) { messageText = it }
+                override fun onFailure(e: Exception) {
+                    e.printStackTrace()
+                }
+            })
+        }
 
         // 사진 전송
         val getContent =
@@ -132,27 +145,6 @@ class ChatActivity : AppCompatActivity() {
                 hideProgressBar()
             }
 
-        var originalHeight = -1
-        var keyboardHeight = 0
-
-        // 리사이클러뷰 레이아웃 측정(액티비티 onCreate()시에만 설정)
-        chattingRecyclerView.apply {
-            viewTreeObserver.addOnGlobalLayoutListener(object :
-                ViewTreeObserver.OnGlobalLayoutListener {
-                override fun onGlobalLayout() {
-
-                    // 키보드 높이 추출 (액티비티 생성 시 최초 1회만 계산)
-                    originalHeight = max(chattingRecyclerView.height, originalHeight)
-                    if (originalHeight - chattingRecyclerView.height > 100) {
-                        keyboardHeight = originalHeight - chattingRecyclerView.height
-                        chattingRecyclerView.viewTreeObserver.removeOnGlobalLayoutListener(this)
-                    }
-
-                    chattingRecyclerView.viewTreeObserver.removeOnGlobalLayoutListener(this)
-                }
-            })
-        }
-
         // 리사이클러뷰에 데이터 추가
         messageAdapter = MessageAdapter(messageList = listOf(), senderUID = myID ?: "")
         val llm = LinearLayoutManager(this@ChatActivity)
@@ -170,61 +162,73 @@ class ChatActivity : AppCompatActivity() {
                 override fun onRequestDisallowInterceptTouchEvent(disallowIntercept: Boolean) {}
 
             })
-            setItemViewCacheSize(15)
+            setItemViewCacheSize(30)
         }
 
-        // 상대방 프로필 이미지 다운로드
-        chatViewModel.downloadProfileImage(otherID!!, object: OnFileDownloadListener {
-            override fun onSuccess(byteArray: ByteArray) {
-                messageAdapter.setImageProfileUri(byteArray)
-            }
-
-            override fun onFailure(e: Exception) {
-                e.printStackTrace()
-            }
-        })
+        var isFirstLoading = true
 
         // 채팅 목록 동기화
-        val messageList = ArrayList<Message>()
+        chatViewModel.messageList.observe(this) { messageList ->
+            if (messageList.isEmpty()) return@observe
 
-        lifecycleScope.launch(Dispatchers.Main) {
-            val fetchMessagesJob = async(Dispatchers.IO) {
-                chatViewModel.fetchMessagesFromExternalDB(receiverRoom!!)
-                chatViewModel.fetchMessagesFromRoomDB(receiverRoom!!)
-            }
-
-            messageList.addAll(fetchMessagesJob.await())
-
-            chatViewModel.fetchLastMessageFromRoomDB(receiverRoom!!, lifecycleScope).collect {
-                chatViewModel.addMessageAfterLaunchingActivity()
-                messageList.add(it)
+            try {
                 messageAdapter.setUriListSize(messageList.size)
                 messageAdapter.submitList(messageList.toMutableList())
+            } catch(e: Exception) {
+                e.printStackTrace()
+            }
 
-                messageList.forEachIndexed { idx, currMessage ->
-                    if (currMessage.messageType == Message.TYPE_NORMAL_TEXT) return@forEachIndexed
+            // 메시지 처음 받아올 때, 가장 최근 메시지로 스크롤 이동
+            if (isFirstLoading) {
+                chattingRecyclerView.scrollToPosition(messageAdapter.messageList.lastIndex)
+                isFirstLoading = false
+            }
 
-                    withContext(Dispatchers.IO) {
-                        chatViewModel.downloadFile(
-                            currMessage,
-                            object : OnFileDownloadListener {
-                                override fun onSuccess(byteArray: ByteArray) {
-                                    messageAdapter.addImageUriToList(idx, byteArray)
-                                    messageAdapter.notifyItemChanged(idx)
-                                }
+            if (chatViewModel.getPreMessageList().isEmpty() || chatViewModel.getPreMessageList().last().messageId == messageList.last().messageId) { // 오래전 메시지 로딩 시
 
-                                override fun onFailure(e: Exception) {
-                                    e.printStackTrace()
-                                }
-                            })
-                    }
+                for (i in 0..messageList.size-chatViewModel.getPreMessageList().size) {
+                    if (i !in messageList.indices) break
+
+                    val currMessage = messageList[i]
+                    if (currMessage.messageType == Message.TYPE_NORMAL_TEXT) continue
+                    chatViewModel.downloadFile(
+                        currMessage,
+                        object : OnFileDownloadListener {
+                            override fun onSuccess(byteArray: ByteArray) {
+                                messageAdapter.addImageUriToList(i, byteArray)
+                                messageAdapter.notifyItemChanged(i)
+                            }
+
+                            override fun onFailure(e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+                    )
                 }
+            } else { // 신규 메시지 추가 시
+                val currMessage = messageList.last()
+                if (currMessage.messageType != Message.TYPE_NORMAL_TEXT) {
+                    chatViewModel.downloadFile(
+                        currMessage,
+                        object : OnFileDownloadListener {
+                            override fun onSuccess(byteArray: ByteArray) {
+                                messageAdapter.addImageUriToList(messageList.lastIndex, byteArray)
+                                messageAdapter.notifyItemChanged(messageList.lastIndex)
+                            }
+
+                            override fun onFailure(e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+                    )
+                }
+
                 if (messageList.last().senderId == myID!!) {
-                    chattingRecyclerView.scrollToPosition(messageAdapter.messageList.lastIndex)
+                    chattingRecyclerView.layoutManager?.scrollToPosition(messageAdapter.messageList.lastIndex+1)
                 }
             }
 
-
+            chatViewModel.setPreMessageList(messageList)
         }
 
         // 이미지 추가 버튼 클릭
@@ -246,6 +250,7 @@ class ChatActivity : AppCompatActivity() {
 
             if (mBinding.etChatMessagebox.text!!.isEmpty()) return@setOnClickListener
             it.isEnabled = false
+            showProgressBar()
 
             val sdf = SimpleDateFormat(
                 "yyyy-MM-dd HH:mm:ss.SSS",
@@ -271,13 +276,6 @@ class ChatActivity : AppCompatActivity() {
             messageBox.setText("")
         }
 
-        // 키보드 생성/파괴 시 채팅 리사이클러뷰 스크롤
-        chattingRecyclerView.viewTreeObserver.addOnGlobalLayoutListener {
-            println("KEYBOARD HEIGHT : $keyboardHeight\nCHATTING RECYCLERVIEW HEIGHT: ${chattingRecyclerView.height}")
-//            if (chattingRecyclerView.height < originalHeight) chattingRecyclerView.scrollBy(0, keyboardHeight / 2)
-//            else chattingRecyclerView.scrollBy(0, -keyboardHeight / 2)
-        }
-
         // 보낸 메시지 클릭리스너 설정
         messageAdapter.setOnMyMessageClickListener(object :
             MessageAdapter.OnMessageClickListener {
@@ -293,6 +291,23 @@ class ChatActivity : AppCompatActivity() {
             @RequiresApi(Build.VERSION_CODES.P)
             override fun onClick(view: View, position: Int) {
                 onClickReceivedMessage(view, position)
+            }
+        })
+
+        // 무한스크롤 & 메시지 동적로드
+        chattingRecyclerView.addOnScrollListener(object: RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+                val layoutManager = chattingRecyclerView.layoutManager as LinearLayoutManager
+
+                if (isLoading) return
+                if (layoutManager.findFirstCompletelyVisibleItemPosition() <= 1) {
+                    isLoading = true
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        chatViewModel.fetchMessagesFromRoomDB(chatRoom = receiverRoom!!)
+                        isLoading = false
+                    }
+                }
             }
         })
     }
@@ -328,10 +343,12 @@ class ChatActivity : AppCompatActivity() {
 
     private val onMessageSendListener = object: OnFirebaseCommunicationListener {
         override fun onSuccess() {
+            hideProgressBar()
             sendMessageButton.isEnabled = true
         }
 
         override fun onFailure() {
+            hideProgressBar()
             Toast.makeText(this@ChatActivity, "메시지 전송에 실패하였습니다.", Toast.LENGTH_SHORT).show()
             sendMessageButton.isEnabled = true
         }
