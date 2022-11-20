@@ -1,17 +1,17 @@
 package com.example.chatappsample.data.dao
 
 import androidx.room.*
-import com.example.chatappsample.data.entity.UserEntity
+import com.example.chatappsample.data.entity.UserData
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface UserDataDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertUser(userEntity: UserEntity)
+    fun insertUser(userEntity: UserData)
 
     @Delete
-    fun deleteUser(userEntity: UserEntity)
+    fun deleteUser(userEntity: UserData)
 
     @Query("SELECT * FROM users")
-    fun getAllUserList(): Flow<List<UserEntity>>
+    fun getAllUserList(): Flow<List<UserData>>
 }

@@ -15,7 +15,7 @@ import com.bumptech.glide.Glide
 import com.example.chatappsample.R
 import com.example.chatappsample.databinding.ActivityMainBinding
 import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
-import com.example.chatappsample.domain.dto.User
+import com.example.chatappsample.domain.dto.UserDomain
 import com.example.chatappsample.presentation.viewmodel.UserViewModel
 import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.tabs.TabLayoutMediator
@@ -27,7 +27,7 @@ class MainActivity : FragmentActivity() {
 
     val viewModel: UserViewModel by lazy { ViewModelProvider(this)[UserViewModel::class.java] }
     private lateinit var mBinding: ActivityMainBinding
-    private var currentUser: User? = null
+    private var currentUserDomain: UserDomain? = null
     private val chatRoomsListFragment = ChatRoomsListFragment()
     private val mypageFragment = MypageFragment()
     private val mainPagerAdapter = MainPagerAdapter(this)
@@ -40,7 +40,7 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        viewModel.setCurrentUserId(intent.getStringExtra("CURRENT_USER")!!)
+        viewModel.setCurrentUserId(intent.getStringExtra(CURRENT_USER)!!)
 
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
 
@@ -48,8 +48,8 @@ class MainActivity : FragmentActivity() {
         mBinding.viewModel = this@MainActivity.viewModel
         mBinding.lifecycleOwner = this@MainActivity
 
-        viewModel.currentUser.observe(this) {
-            if (it != null && currentUser?.profileImage != it.profileImage) {
+        viewModel.currentUserDomain.observe(this) {
+            if (it != null && currentUserDomain?.profileImage != it.profileImage) {
                 viewModel.downloadProfileImage(it, object: OnFileDownloadListener {
 
                     override fun onSuccess(byteArray: ByteArray) {
@@ -69,7 +69,7 @@ class MainActivity : FragmentActivity() {
                 })
             }
 
-            if (it != null) currentUser = it
+            if (it != null) currentUserDomain = it
         }
         mBinding.viewpager2Main.adapter = mainPagerAdapter
 
@@ -77,11 +77,6 @@ class MainActivity : FragmentActivity() {
             tab.text = mainTabItemList[position].tabString
             tab.icon = AppCompatResources.getDrawable(this, mainTabItemList[position].tabIconDrawableId)
         }).attach()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        println("CURRENT USER ID ON ONRESUME() : ${intent.getStringExtra("CURRENT_USER")}")
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -120,4 +115,8 @@ class MainActivity : FragmentActivity() {
      * @property tabIconDrawableId  Tab Icon drawable id
      */
     data class MainTabItem(val fragment: Fragment, val tabString: String, val tabIconDrawableId: Int)
+
+    companion object {
+        const val CURRENT_USER = "current_user"
+    }
 }

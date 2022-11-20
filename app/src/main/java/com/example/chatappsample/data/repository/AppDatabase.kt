@@ -1,20 +1,22 @@
 package com.example.chatappsample.data.repository
 
+import com.example.chatappsample.data.dao.ChatRoomDataDao
 import android.content.Context
 import androidx.room.*
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.chatappsample.data.dao.MessageDataDao
 import com.example.chatappsample.data.dao.UserDataDao
-import com.example.chatappsample.data.entity.MessageEntity
-import com.example.chatappsample.data.entity.UserEntity
+import com.example.chatappsample.data.entity.ChatRoomData
+import com.example.chatappsample.data.entity.MessageData
+import com.example.chatappsample.data.entity.UserData
 
-@Database(entities = [MessageEntity::class, UserEntity::class], version = 1, exportSchema = false)
+@Database(entities = [MessageData::class, UserData::class, ChatRoomData::class], version = 1, exportSchema = false)
 abstract class AppDatabase: RoomDatabase() {
 
     abstract fun getUserDao(): UserDataDao
 
     abstract fun getMessageDao(): MessageDataDao
+
+    abstract fun getChatRoomDao(): ChatRoomDataDao
 
     companion object {
         private var instance: AppDatabase? = null
@@ -26,15 +28,8 @@ abstract class AppDatabase: RoomDatabase() {
         }
 
         private fun buildDatabase(context: Context): AppDatabase {
-            return Room.databaseBuilder(context, AppDatabase::class.java, DATABASE_NAME)
-                .addCallback (
-                    object : RoomDatabase.Callback() {
-                        override fun onCreate(db: SupportSQLiteDatabase) {
-                            super.onCreate(db)
-
-                        }
-                    }
-                )
+            return Room
+                .databaseBuilder(context, AppDatabase::class.java, DATABASE_NAME)
                 .build()
         }
 

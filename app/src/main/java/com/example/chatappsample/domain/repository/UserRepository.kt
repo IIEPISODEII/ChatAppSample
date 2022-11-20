@@ -3,7 +3,7 @@ package com.example.chatappsample.domain.repository
 import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
 import com.example.chatappsample.domain.`interface`.OnGetDataListener
 import com.example.chatappsample.domain.`interface`.OnGetRegistrationListener
-import com.example.chatappsample.domain.dto.User
+import com.example.chatappsample.domain.dto.UserDomain
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 
@@ -18,7 +18,7 @@ interface UserRepository {
     /** 모든 유저 정보 가져오기
      * @param listener 정보를 가져올 경우 콜백 등록
      * **/
-    suspend fun getAllUsersFromRoomDB(): Flow<List<User>>
+    suspend fun getAllUsersFromRoomDB(): Flow<List<UserDomain>>
 
     /** 로그아웃 **/
     fun signOut(): Boolean
@@ -32,14 +32,27 @@ interface UserRepository {
     fun signUp(name: String, email: String, password: String, listener: OnGetRegistrationListener)
 
     /** 파이어베이스 데이터베이스에 유저 정보 저장
-     * @param user 저장할 유저 정보
+     * @param userDomain 저장할 유저 정보
      * @param changeProfileImage 프로필 이미지 갱신 여부. true면 갱신, false면 갱신하지 않음
      * **/
-    fun updateCurrentUser(user: User, changeProfileImage: Boolean)
+    fun updateCurrentUser(userDomain: UserDomain, changeProfileImage: Boolean)
 
     /** 프로필 이미지 다운로드
      * @param userID 유저ID
      * @param onFileDownloadListener 파일 다운로드할 경우 콜백 등록
      */
     fun downloadProfileImage(userID: String, onFileDownloadListener: OnFileDownloadListener)
+
+    /**
+     * 채팅방 상태 업데이트
+     *
+     * @param myId 내 아이디
+     * @param yourId 상대방 아이디
+     * @param time 내 접속 시간
+     * @param onSuccess 채팅방 업데이트 성공 시 콜백 
+     * @param onFail 채팅방 업데이트 실패 시 콜백
+     * @param enter true: 채팅방 들어오기, false: 채팅방 나가기
+     * @param coroutineScope 코루틴스코프 설정
+     */
+    fun updateChatRoomState(myId: String, yourId: String, time: String, onSuccess: (String) -> Unit, onFail: () -> Unit, enter: Boolean, coroutineScope: CoroutineScope)
 }

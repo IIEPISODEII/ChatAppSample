@@ -1,12 +1,8 @@
 package com.example.chatappsample.domain.dto
 
-import com.example.chatappsample.data.entity.UserEntity
-
-data class User(
+data class UserDomain(
     var name: String = "",
     var email: String = "",
     val uid: String = "",
     var profileImage: String = ""
-) {
-    fun toUserEntity(): UserEntity = UserEntity(name, uid, profileImage, email)
-}
+)

@@ -8,8 +8,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
 import com.example.chatappsample.domain.`interface`.OnGetDataListener
 import com.example.chatappsample.domain.`interface`.OnGetRegistrationListener
-import com.example.chatappsample.domain.dto.Message
-import com.example.chatappsample.domain.dto.User
+import com.example.chatappsample.domain.dto.MessageDomain
+import com.example.chatappsample.domain.dto.UserDomain
 import com.example.chatappsample.domain.usecase.*
 import com.example.chatappsample.util.Resource
 import com.google.android.gms.tasks.Task
@@ -17,6 +17,8 @@ import com.google.firebase.auth.AuthResult
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -33,6 +35,7 @@ class UserViewModel @Inject constructor(
     private val updateCurrentUserUsecase: UpdateCurrentUserUsercase,
     private val downloadProfileImageUsecase: DownloadProfileImageUsecase,
     private val takeLastMessageUsecase: FetchLastMessageUsecase,
+    private val updateChatRoomUsecase: UpdateChatRoomUsecase
 ) : ViewModel() {
 
     private var currentUserId: String = ""
@@ -45,17 +48,17 @@ class UserViewModel @Inject constructor(
         }
     }
 
-    private val _currentUser = MutableLiveData<User?>()
-    val currentUser: LiveData<User?>
-        get() = _currentUser
+    private val _currentUserDomain = MutableLiveData<UserDomain?>()
+    val currentUserDomain: LiveData<UserDomain?>
+        get() = _currentUserDomain
 
     fun getCurrentUserInformation() {
         getCurrentUserUsecase.getCurrentUser(object : OnGetDataListener {
             override fun onSuccess(dataSnapshot: DataSnapshot) {
-                val user =
-                    dataSnapshot.getValue(User::class.java) ?: User()
-                if (user.uid == "") return
-                _currentUser.postValue(user)
+                val userDomain =
+                    dataSnapshot.getValue(UserDomain::class.java) ?: UserDomain()
+                if (userDomain.uid == "") return
+                _currentUserDomain.postValue(userDomain)
             }
 
             override fun onStart() {}
@@ -66,11 +69,11 @@ class UserViewModel @Inject constructor(
         })
     }
 
-    private val _allUsersList = MutableLiveData<List<User>>()
-    val allUsersList: LiveData<List<User>>
+    private val _allUsersList = MutableLiveData<List<UserDomain>>()
+    val allUsersList: LiveData<List<UserDomain>>
         get() = _allUsersList
 
-    private suspend fun getAllUsers(): Flow<List<User>> {
+    private suspend fun getAllUsers(): Flow<List<UserDomain>> {
         return getAllUsersUsecase().map { list -> list.filter { user -> user.uid != currentUserId } }
     }
 
@@ -83,7 +86,7 @@ class UserViewModel @Inject constructor(
     private val _isSignedUp = MutableLiveData(false)
 
     fun signOut() {
-        if (signOutUsecase.signOut()) _currentUser.value = null
+        if (signOutUsecase.signOut()) _currentUserDomain.value = null
     }
 
     fun signUp(name: String, email: String, password: String) {
@@ -109,12 +112,12 @@ class UserViewModel @Inject constructor(
         setAutoLoginCheckUsecase(false)
     }
 
-    fun updateCurrentUser(user: User, changeProfileImage: Boolean) {
-        updateCurrentUserUsecase(user, changeProfileImage)
+    fun updateCurrentUser(userDomain: UserDomain, changeProfileImage: Boolean) {
+        updateCurrentUserUsecase(userDomain, changeProfileImage)
     }
 
-    fun downloadProfileImage(user: User, onFileDownloadListener: OnFileDownloadListener) {
-        downloadProfileImageUsecase(user.uid, onFileDownloadListener)
+    fun downloadProfileImage(userDomain: UserDomain, onFileDownloadListener: OnFileDownloadListener) {
+        downloadProfileImageUsecase(userDomain.uid, onFileDownloadListener)
     }
 
     private val _isProfileEditMode = MutableLiveData(false)
@@ -125,14 +128,18 @@ class UserViewModel @Inject constructor(
         _isProfileEditMode.postValue(mode)
     }
 
-    suspend fun takeLastMessage(user: User): Flow<Message> {
+    suspend fun takeLastMessage(userDomain: UserDomain): Flow<MessageDomain?> {
         return try {
-            takeLastMessageUsecase(currentUser.value!!.uid + user.uid)
+            takeLastMessageUsecase(currentUserDomain.value!!.uid + userDomain.uid)
         } catch (e: Exception) {
             e.printStackTrace()
             flow {
-                emit(Message())
+                emit(null)
             }
         }
+    }
+
+    fun updateChatRoom(myId: String, yourId: String, time: String, onSuccess: (String) -> Unit, onFail: () -> Unit, enter: Boolean) {
+        updateChatRoomUsecase(myId, yourId, time, onSuccess, onFail, enter, viewModelScope)
     }
 }

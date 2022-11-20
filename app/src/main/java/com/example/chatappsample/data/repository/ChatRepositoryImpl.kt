@@ -2,11 +2,13 @@ package com.example.chatappsample.data.repository
 
 import android.net.Uri
 import android.util.Log
-import com.example.chatappsample.data.entity.MessageEntity
+import com.example.chatappsample.data.entity.MessageData
 import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
 import com.example.chatappsample.domain.`interface`.OnFirebaseCommunicationListener
-import com.example.chatappsample.domain.dto.Message
+import com.example.chatappsample.domain.dto.ChatRoomDomain
+import com.example.chatappsample.domain.dto.MessageDomain
 import com.example.chatappsample.domain.repository.ChatRepository
+import com.example.chatappsample.util.TEN_MEGABYTE
 import com.google.firebase.database.*
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.ktx.storageMetadata
@@ -18,31 +20,28 @@ import javax.inject.Inject
 class ChatRepositoryImpl @Inject constructor(
     private val firebaseDatabase: FirebaseDatabase,
     private val firebaseStorage: FirebaseStorage,
-    private val messageRoomDB: AppDatabase
+    private val roomDB: AppDatabase
 ) : ChatRepository {
 
-    companion object {
-        const val FIREBASE_FIRST_CHILD = "chats"
-        const val FIREBASE_SECOND_CHILD = "messages"
-    }
+    private val db = firebaseDatabase.reference
 
     override suspend fun fetchMessagesFromExternalDB(
         chatRoom: String,
         coroutineScope: CoroutineScope
     ) {
-        firebaseDatabase
-            .reference
-            .child(FIREBASE_FIRST_CHILD)
+        db
+            .child(FIREBASE_FIRST_CHILD_CHATS)
             .child(chatRoom)
-            .child(FIREBASE_SECOND_CHILD)
-            .addChildEventListener(object: ChildEventListener {
+            .child(FIREBASE_SECOND_CHILD_MESSAGES)
+            .addChildEventListener(object : ChildEventListener {
                 override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
                     coroutineScope.launch(Dispatchers.IO) {
-                        val receivedMessage = snapshot.getValue(Message::class.java)
-                        if (receivedMessage != null) {
-                            messageRoomDB
+                        val receivedMessageData = snapshot.getValue(MessageData::class.java)
+                        receivedMessageData?.chatRoom = chatRoom
+                        if (receivedMessageData != null) {
+                            roomDB
                                 .getMessageDao()
-                                .insertMessage(receivedMessage.toMessageEntity(chatRoom))
+                                .insertMessage(receivedMessageData)
                         }
                     }
                 }
@@ -69,36 +68,40 @@ class ChatRepositoryImpl @Inject constructor(
     override suspend fun fetchMessagesFromRoomDBAsFlow(
         chatRoom: String,
         queriesSize: Int
-    ): Flow<List<Message>> {
-        return messageRoomDB.getMessageDao().fetchRecentlyReceivedMessagesAsFlow(chatRoom, queriesSize).map { messageEntityList -> messageEntityList.map{ it.toMessageDTO() } }
+    ): Flow<List<MessageDomain?>> {
+        return roomDB.getMessageDao()
+            .fetchRecentlyReceivedMessagesAsFlow(chatRoom, queriesSize)
+            .map { list ->
+                list.map {
+                    it?.toDomain()
+                }
+            }
     }
 
     override suspend fun fetchMessagesFromRoomDB(
         chatRoom: String,
         queriesSize: Int,
         offset: Int
-    ): List<Message> {
-        return messageRoomDB.getMessageDao().fetchRecentlyReceivedMessages(chatRoom, queriesSize, offset).map { it.toMessageDTO() }
+    ): List<MessageDomain?> {
+        return roomDB.getMessageDao()
+            .fetchRecentlyReceivedMessages(chatRoom, queriesSize, offset)
+            .map { messageData ->
+                messageData?.toDomain()
+            }
     }
 
     override suspend fun sendMessage(
-        message: Message,
-        myChatRoom: String,
-        yourChatRoom: String,
+        message: MessageDomain,
+        chatRoom: String,
         onFirebaseCommunicationListener: OnFirebaseCommunicationListener
     ) {
-        firebaseDatabase.reference.child(FIREBASE_FIRST_CHILD)
-            .child(myChatRoom)
-            .child(FIREBASE_SECOND_CHILD)
+        db
+            .child(FIREBASE_FIRST_CHILD_CHATS)
+            .child(chatRoom)
+            .child(FIREBASE_SECOND_CHILD_MESSAGES)
             .push()
             .setValue(message)
             .addOnSuccessListener {
-                firebaseDatabase.reference
-                    .child(FIREBASE_FIRST_CHILD)
-                    .child(yourChatRoom)
-                    .child(FIREBASE_SECOND_CHILD)
-                    .push()
-                    .setValue(message)
                 onFirebaseCommunicationListener.onSuccess()
             }
             .addOnCanceledListener {
@@ -107,31 +110,32 @@ class ChatRepositoryImpl @Inject constructor(
     }
 
     override suspend fun uploadFile(
-        message: Message,
-        myChatRoom: String,
-        yourChatRoom: String,
+        message: MessageDomain,
+        chatRoom: String,
         onFirebaseCommunicationListener: OnFirebaseCommunicationListener
     ) {
+        val messageData = MessageData(
+            messageId = message.messageId,
+            chatRoom = chatRoom,
+            type = message.messageType,
+            senderId = message.senderId,
+            message = message.message,
+            sentTime = message.sentTime
+        )
+
         val metadata = storageMetadata {
             contentType = "image/jpeg"
         }
         firebaseStorage.reference
-            .child("images/${message.senderId}/${message.sentTime}/${message.message}")
-            .putFile(Uri.parse(message.message), metadata)
+            .child("images/${messageData.senderId}/${messageData.sentTime}/${messageData.message}")
+            .putFile(Uri.parse(messageData.message), metadata)
             .addOnSuccessListener {
-                firebaseDatabase.reference.child(FIREBASE_FIRST_CHILD)
-                    .child(myChatRoom)
-                    .child(FIREBASE_SECOND_CHILD)
+                firebaseDatabase.reference.child(FIREBASE_FIRST_CHILD_CHATS)
+                    .child(chatRoom)
+                    .child(FIREBASE_SECOND_CHILD_MESSAGES)
                     .push()
-                    .setValue(message)
+                    .setValue(messageData)
                     .addOnSuccessListener {
-                        firebaseDatabase.reference
-                            .child(FIREBASE_FIRST_CHILD)
-                            .child(yourChatRoom)
-                            .child(FIREBASE_SECOND_CHILD)
-                            .push()
-                            .setValue(message)
-
                         onFirebaseCommunicationListener.onSuccess()
                     }
             }
@@ -140,15 +144,22 @@ class ChatRepositoryImpl @Inject constructor(
             }
     }
 
-    private val TEN_MEGABYTE = 10L * 1024L * 1024L
-
     override fun downloadFile(
-        message: Message,
+        message: MessageDomain,
         onFileDownloadListener: OnFileDownloadListener
     ) {
+        val messageData = MessageData(
+            messageId = message.messageId,
+            type = message.messageType,
+            senderId = message.senderId,
+            message = message.message,
+            sentTime = message.sentTime,
+            chatRoom = ""
+        )
+
         firebaseStorage
             .reference
-            .child("images/${message.senderId}/${message.sentTime}/${message.message}")
+            .child("images/${messageData.senderId}/${messageData.sentTime}/${messageData.message}")
             .getBytes(TEN_MEGABYTE)
             .addOnSuccessListener {
                 onFileDownloadListener.onSuccess(it)
@@ -159,13 +170,25 @@ class ChatRepositoryImpl @Inject constructor(
             }
     }
 
-    override suspend fun takeLastMessageOfChatRoom(chatRoom: String): Flow<Message> {
-        return messageRoomDB
-            .getMessageDao()
-            .fetchLastReceivedMessages(chatRoom)
-            .map {
-                value: MessageEntity? ->
-                value?.toMessageDTO() ?: Message()
+    override suspend fun takeLastMessageOfChatRoom(chatRoom: String): Flow<MessageDomain?> {
+        return roomDB.getMessageDao().fetchLastReceivedMessages(chatRoom)
+            .map { messageData ->
+                messageData?.toDomain()
+            }
+    }
+
+    override suspend fun fetchChatRoomFromDB(chatRoomId: String): Flow<List<ChatRoomDomain.ReaderLog>> {
+        println("chatRoomId in RepoImpl: $chatRoomId")
+        return roomDB.getChatRoomDao().fetchReaderLogs(targetChatRoom = chatRoomId).map { list ->
+            list.map {
+                println("ReaderLog in RepoImpl : $list")
+                ChatRoomDomain.ReaderLog(it.participantsId, it.participationTime)
+            }
         }
+    }
+
+    companion object {
+        const val FIREBASE_FIRST_CHILD_CHATS = "chats"
+        const val FIREBASE_SECOND_CHILD_MESSAGES = "messages"
     }
 }

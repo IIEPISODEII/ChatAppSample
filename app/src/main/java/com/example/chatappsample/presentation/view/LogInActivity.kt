@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.example.chatappsample.R
 import com.example.chatappsample.data.repository.SharedPreferenceRepositoryImpl
 import com.example.chatappsample.domain.repository.SharedPreferenceRepository
+import com.example.chatappsample.presentation.view.MainActivity.Companion.CURRENT_USER
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.textfield.TextInputEditText
@@ -84,10 +85,8 @@ class LogInActivity : AppCompatActivity() {
                 if (task.isSuccessful) {
                     finish()
                     // Sign in success, update UI with the signed-in user's information
-                    val intent = Intent(this@LogInActivity, MainActivity::class.java).apply {
-                        println("INTENT: ${task.result.user!!.uid}")
-                        this.putExtra(task.result.user!!.uid, "CURRENT_USER")
-                    }
+                    val intent = Intent(this@LogInActivity, MainActivity::class.java)
+                    intent.putExtra(CURRENT_USER, task.result.user!!.uid)
                     startActivity(intent)
                 } else {
                     // If sign in fails, display a message to the user.

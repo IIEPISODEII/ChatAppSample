@@ -1,10 +1,10 @@
 package com.example.chatappsample.domain.repository
 
-import android.net.Uri
+import com.example.chatappsample.data.entity.MessageData
 import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
 import com.example.chatappsample.domain.`interface`.OnFirebaseCommunicationListener
-import com.example.chatappsample.domain.`interface`.OnGetDataListener
-import com.example.chatappsample.domain.dto.Message
+import com.example.chatappsample.domain.dto.ChatRoomDomain
+import com.example.chatappsample.domain.dto.MessageDomain
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 
@@ -18,34 +18,36 @@ interface ChatRepository {
     suspend fun fetchMessagesFromRoomDBAsFlow(
         chatRoom: String,
         queriesSize: Int
-    ) : Flow<List<Message>>
+    ): Flow<List<MessageDomain?>>
 
     suspend fun fetchMessagesFromRoomDB(
         chatRoom: String,
         queriesSize: Int,
         offset: Int
-    ) : List<Message>
+    ): List<MessageDomain?>
 
     suspend fun sendMessage(
-        message: Message,
-        myChatRoom: String,
-        yourChatRoom: String,
+        message: MessageDomain,
+        chatRoom: String,
         onFirebaseCommunicationListener: OnFirebaseCommunicationListener
     )
 
     suspend fun uploadFile(
-        message: Message,
-        myChatRoom: String,
-        yourChatRoom: String,
+        message: MessageDomain,
+        chatRoom: String,
         onFirebaseCommunicationListener: OnFirebaseCommunicationListener
     )
 
     suspend fun takeLastMessageOfChatRoom(
         chatRoom: String
-    ): Flow<Message>
+    ): Flow<MessageDomain?>
 
     fun downloadFile(
-        message: Message,
+        message: MessageDomain,
         onFileDownloadListener: OnFileDownloadListener
     )
+
+    suspend fun fetchChatRoomFromDB(
+        chatRoomId: String
+    ): Flow<List<ChatRoomDomain.ReaderLog>>
 }

@@ -6,7 +6,6 @@ import android.content.ClipboardManager
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.*
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
@@ -14,7 +13,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatTextView
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.databinding.DataBindingUtil
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.ViewModelProvider
@@ -25,16 +23,16 @@ import com.example.chatappsample.R
 import com.example.chatappsample.databinding.ActivityChatBinding
 import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
 import com.example.chatappsample.domain.`interface`.OnFirebaseCommunicationListener
-import com.example.chatappsample.domain.dto.Message
+import com.example.chatappsample.domain.dto.MessageDomain
 import com.example.chatappsample.presentation.view.adapter.MessageAdapter
 import com.example.chatappsample.presentation.viewmodel.ChatViewModel
+import com.example.chatappsample.util.FULL_DATE_FORMAT
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textview.MaterialTextView
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
-import java.lang.Integer.max
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -57,10 +55,9 @@ class ChatActivity : AppCompatActivity() {
     private val imm by lazy { messageBox.context.getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager }
 
     private lateinit var messageAdapter: MessageAdapter
-    var receiverRoom: String? = null
-    var senderRoom: String? = null
     private var messageText = ""
     private var isLoading = false
+    private var chatRoomId = ""
 
     @RequiresApi(Build.VERSION_CODES.M)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -79,8 +76,7 @@ class ChatActivity : AppCompatActivity() {
 
         val otherID = intent.getStringExtra(OTHER_UID)
         val myID = intent.getStringExtra(CURRENT_UID)
-        senderRoom = otherID + myID
-        receiverRoom = myID + otherID
+        chatRoomId = intent.getStringExtra(CHATROOM_ID)!!
 
         // 뷰모델 기본 리스너 설정
         chatViewModel.run {
@@ -105,36 +101,35 @@ class ChatActivity : AppCompatActivity() {
                 if (it.resultCode == Activity.RESULT_OK) {
                     val clipDatas = it?.data?.clipData
                     val clipDataSize = clipDatas?.itemCount
-                    val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.KOREA).format(Date(System.currentTimeMillis()))
+                    val sdf = SimpleDateFormat(FULL_DATE_FORMAT, Locale.KOREA).format(Date(System.currentTimeMillis()))
 
                     if (clipDatas == null) {
                         val selectedImageUri = it?.data?.data!!
-                        val message = Message(
+                        val messageDomain = MessageDomain(
                             messageId = sdf+UUID.randomUUID().toString(),
-                            messageType = Message.TYPE_IMAGE,
+                            messageType = MessageDomain.TYPE_IMAGE,
                             message = selectedImageUri.toString(),
                             senderId = myID!!,
                             sentTime = sdf
                         )
                         lifecycleScope.launch(Dispatchers.IO) {
-                            chatViewModel.uploadFile(message, senderRoom!!, receiverRoom!!, onImageSendListener)
+                            chatViewModel.uploadFile(messageDomain, chatRoomId, onImageSendListener)
                         }
                     } else {
                         clipDatas.let { clipData ->
                             lifecycleScope.launch(Dispatchers.IO) {
                                 for (i in 0 until clipDataSize!!) {
                                     val selectedImageUri = clipData.getItemAt(i).uri
-                                    val message = Message(
+                                    val messageDomain = MessageDomain(
                                         messageId = sdf+UUID.randomUUID().toString(),
-                                        messageType = Message.TYPE_IMAGE,
+                                        messageType = MessageDomain.TYPE_IMAGE,
                                         message = selectedImageUri.toString(),
                                         senderId = myID!!,
                                         sentTime = sdf
                                     )
                                     chatViewModel.uploadFile(
-                                        message,
-                                        senderRoom!!,
-                                        receiverRoom!!,
+                                        messageDomain,
+                                        chatRoomId,
                                         onImageSendListener
                                     )
                                 }
@@ -146,7 +141,7 @@ class ChatActivity : AppCompatActivity() {
             }
 
         // 리사이클러뷰에 데이터 추가
-        messageAdapter = MessageAdapter(messageList = listOf(), senderUID = myID ?: "")
+        messageAdapter = MessageAdapter(messageDomainList = listOf(), senderUID = myID ?: "")
         val llm = LinearLayoutManager(this@ChatActivity)
         chattingRecyclerView.apply {
             adapter = messageAdapter
@@ -168,7 +163,7 @@ class ChatActivity : AppCompatActivity() {
         var isFirstLoading = true
 
         // 채팅 목록 동기화
-        chatViewModel.messageList.observe(this) { messageList ->
+        chatViewModel.messageDomainList.observe(this) { messageList ->
             if (messageList.isEmpty()) return@observe
 
             try {
@@ -180,7 +175,7 @@ class ChatActivity : AppCompatActivity() {
 
             // 메시지 처음 받아올 때, 가장 최근 메시지로 스크롤 이동
             if (isFirstLoading) {
-                chattingRecyclerView.scrollToPosition(messageAdapter.messageList.lastIndex)
+                chattingRecyclerView.scrollToPosition(messageAdapter.messageDomainList.lastIndex)
                 isFirstLoading = false
             }
 
@@ -190,7 +185,7 @@ class ChatActivity : AppCompatActivity() {
                     if (i !in messageList.indices) break
 
                     val currMessage = messageList[i]
-                    if (currMessage.messageType == Message.TYPE_NORMAL_TEXT) continue
+                    if (currMessage.messageType == MessageDomain.TYPE_NORMAL_TEXT) continue
                     chatViewModel.downloadFile(
                         currMessage,
                         object : OnFileDownloadListener {
@@ -207,7 +202,7 @@ class ChatActivity : AppCompatActivity() {
                 }
             } else { // 신규 메시지 추가 시
                 val currMessage = messageList.last()
-                if (currMessage.messageType != Message.TYPE_NORMAL_TEXT) {
+                if (currMessage.messageType != MessageDomain.TYPE_NORMAL_TEXT) {
                     chatViewModel.downloadFile(
                         currMessage,
                         object : OnFileDownloadListener {
@@ -224,11 +219,16 @@ class ChatActivity : AppCompatActivity() {
                 }
 
                 if (messageList.last().senderId == myID!!) {
-                    chattingRecyclerView.layoutManager?.scrollToPosition(messageAdapter.messageList.lastIndex+1)
+                    chattingRecyclerView.layoutManager?.scrollToPosition(messageAdapter.messageDomainList.lastIndex+1)
                 }
             }
 
             chatViewModel.setPreMessageList(messageList)
+        }
+
+        // 채팅 로그 동기화
+        chatViewModel.readerLogs.observe(this) {
+            messageAdapter.setReaderLog(it)
         }
 
         // 이미지 추가 버튼 클릭
@@ -253,13 +253,13 @@ class ChatActivity : AppCompatActivity() {
             showProgressBar()
 
             val sdf = SimpleDateFormat(
-                "yyyy-MM-dd HH:mm:ss.SSS",
+                FULL_DATE_FORMAT,
                 Locale.KOREA
             ).format(Date(System.currentTimeMillis()))
 
-            val messageObject = Message(
+            val messageDomainObject = MessageDomain(
                 messageId = sdf+UUID.randomUUID().toString(),
-                messageType = Message.TYPE_NORMAL_TEXT,
+                messageType = MessageDomain.TYPE_NORMAL_TEXT,
                 message = messageText,
                 senderId = myID ?: "",
                 sentTime = sdf
@@ -267,9 +267,8 @@ class ChatActivity : AppCompatActivity() {
 
             lifecycleScope.launch(Dispatchers.IO) {
                 chatViewModel.sendMessage(
-                    message = messageObject,
-                    senderChatRoom = senderRoom!!,
-                    receiverChatRoom = receiverRoom!!,
+                    message = messageDomainObject,
+                    chatRoom = chatRoomId,
                     onFirebaseCommunicationListener = onMessageSendListener
                 )
             }
@@ -304,7 +303,7 @@ class ChatActivity : AppCompatActivity() {
                 if (layoutManager.findFirstCompletelyVisibleItemPosition() <= 1) {
                     isLoading = true
                     lifecycleScope.launch(Dispatchers.IO) {
-                        chatViewModel.fetchMessagesFromRoomDB(chatRoom = receiverRoom!!)
+                        chatViewModel.fetchMessagesFromRoomDB(chatRoom = chatRoomId)
                         isLoading = false
                     }
                 }
@@ -333,12 +332,6 @@ class ChatActivity : AppCompatActivity() {
     // 키보드 숨김
     private fun hideIME() {
         imm.hideSoftInputFromWindow(this.currentFocus?.windowToken, 0)
-    }
-
-    companion object {
-        const val OTHER_NAME = "selected_name"
-        const val OTHER_UID = "selected_uid"
-        const val CURRENT_UID = "current_uid"
     }
 
     private val onMessageSendListener = object: OnFirebaseCommunicationListener {
@@ -380,5 +373,12 @@ class ChatActivity : AppCompatActivity() {
     private fun openDrawer() {
         hideIME()
         drawerDrawerLayout.openDrawer(Gravity.RIGHT)
+    }
+
+    companion object {
+        const val OTHER_NAME = "selected_name"
+        const val OTHER_UID = "selected_uid"
+        const val CURRENT_UID = "current_uid"
+        const val CHATROOM_ID = "chatroom_id"
     }
 }

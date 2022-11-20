@@ -1,22 +1,19 @@
 package com.example.chatappsample.presentation.view.adapter
 
-import android.content.Context
-import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.example.chatappsample.presentation.view.ChatActivity
 import com.example.chatappsample.R
-import com.example.chatappsample.domain.dto.Message
-import com.example.chatappsample.domain.dto.User
+import com.example.chatappsample.domain.dto.MessageDomain
+import com.example.chatappsample.domain.dto.UserDomain
 import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.textview.MaterialTextView
 
-class MainUserAdapter(var currentUserId: String, var userList: ArrayList<User>): RecyclerView.Adapter<MainUserAdapter.CustomViewHolder>() {
+class MainUserAdapter(var currentUserId: String, var userDomainList: ArrayList<UserDomain>): RecyclerView.Adapter<MainUserAdapter.CustomViewHolder>() {
 
-    private val lastMessageList: MutableMap<String, Message> = mutableMapOf()
+    private val lastMessageDomainList: MutableMap<String, MessageDomain> = mutableMapOf()
     private val profileImageByteList: MutableMap<String, ByteArray> = mutableMapOf()
 
     inner class CustomViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -38,24 +35,24 @@ class MainUserAdapter(var currentUserId: String, var userList: ArrayList<User>):
     }
 
     override fun onBindViewHolder(holder: CustomViewHolder, position: Int) {
-        val selectedUser = userList[position]
+        val selectedUser = userDomainList[position]
         holder.userName.text = selectedUser.name
-        holder.userLastMessage.text = if (selectedUser.profileImage.isNotEmpty()) "사진" else lastMessageList[selectedUser.uid]?.message
-        holder.userLastMessageTime.text = lastMessageList[selectedUser.uid]?.sentTime
+        holder.userLastMessage.text = if (selectedUser.profileImage.isNotEmpty()) "사진" else lastMessageDomainList[selectedUser.uid]?.message
+        holder.userLastMessageTime.text = lastMessageDomainList[selectedUser.uid]?.sentTime
         Glide
             .with(holder.itemView.context)
             .load(profileImageByteList[selectedUser.uid])
             .into(holder.userProfileImage)
     }
 
-    override fun getItemCount(): Int = userList.size
+    override fun getItemCount(): Int = userDomainList.size
 
-    fun addLastMessageToList(user: User, message: Message) {
-        lastMessageList[user.uid] = message
+    fun addLastMessageToList(userDomain: UserDomain, messageDomain: MessageDomain) {
+        lastMessageDomainList[userDomain.uid] = messageDomain
     }
 
-    fun addProfileImageByteArrayToList(user: User, byteArray: ByteArray) {
-        profileImageByteList[user.uid] = byteArray
+    fun addProfileImageByteArrayToList(userDomain: UserDomain, byteArray: ByteArray) {
+        profileImageByteList[userDomain.uid] = byteArray
     }
 
     private var onChatRoomClickListener: ChatRoomClickListener? = null

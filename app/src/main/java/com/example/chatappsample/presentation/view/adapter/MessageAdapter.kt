@@ -10,12 +10,13 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.MultiTransformation
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.example.chatappsample.R
-import com.example.chatappsample.domain.dto.Message
+import com.example.chatappsample.domain.dto.ChatRoomDomain
+import com.example.chatappsample.domain.dto.MessageDomain
 import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.textview.MaterialTextView
 
-class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
-    ListAdapter<Message, RecyclerView.ViewHolder>(MessageDiffUtil()) {
+class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: String) :
+    ListAdapter<MessageDomain, RecyclerView.ViewHolder>(MessageDiffUtil()) {
 
     // 리사이클러 뷰홀더 타입 지정
     private val EMPTY_MESSAGE = -1
@@ -31,11 +32,13 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
 
     private val imageList: MutableList<ByteArray?> = mutableListOf()
     private var profileByteArray: ByteArray? = null
+    private val readersLog = mutableListOf<ChatRoomDomain.ReaderLog>()
 
     inner class MyMessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val myDateTextView: MaterialTextView = itemView.findViewById(R.id.tv_current_date_presentation_in_my_message_viewholder)
         private val myMessageTextView: MaterialTextView = itemView.findViewById(R.id.tv_my_message)
         private val myTimeTextView: MaterialTextView = itemView.findViewById(R.id.tv_my_message_time)
+        private val myReadersTextView: MaterialTextView = itemView.findViewById(R.id.tv_my_reader_logs_message_viewholder)
 
         init {
             myMessageTextView.setOnClickListener {
@@ -43,11 +46,13 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
             }
         }
 
-        fun bind(message: Message, isDateVisible: Boolean) {
-            myDateTextView.text = convertSimpleDateFormatToTime(message.sentTime)[0]
+        fun bind(messageDomain: MessageDomain, isDateVisible: Boolean) {
+            myDateTextView.text = convertSimpleDateFormatToTime(messageDomain.sentTime)[0]
             myDateTextView.visibility = if (isDateVisible) View.VISIBLE else View.GONE
-            myMessageTextView.text = message.message
-            myTimeTextView.text = convertSimpleDateFormatToTime(message.sentTime)[1]
+            myMessageTextView.text = messageDomain.message
+            myTimeTextView.text = convertSimpleDateFormatToTime(messageDomain.sentTime)[1]
+            myReadersTextView.text = readersLog.count { it.time.isEmpty() || it.time < messageDomain.sentTime }.toString()
+            println("readersLog: $readersLog")
         }
     }
 
@@ -56,6 +61,7 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
         private val othersMessageTextView: MaterialTextView = itemView.findViewById(R.id.tv_others_message)
         private val othersTimeTextView: MaterialTextView = itemView.findViewById(R.id.tv_others_message_time)
         private val othersMessageUserProfile: ShapeableImageView = itemView.findViewById(R.id.iv_others_message_user_profile)
+        private val othersReadersTextView: MaterialTextView = itemView.findViewById(R.id.tv_others_reader_logs_message_viewholder)
 
         init {
             othersMessageTextView.setOnClickListener {
@@ -63,11 +69,12 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
             }
         }
 
-        fun bind(message: Message, isDateVisible: Boolean) {
-            othersDateTextView.text = convertSimpleDateFormatToTime(message.sentTime)[0]
+        fun bind(messageDomain: MessageDomain, isDateVisible: Boolean) {
+            othersDateTextView.text = convertSimpleDateFormatToTime(messageDomain.sentTime)[0]
             othersDateTextView.visibility = if (isDateVisible) View.VISIBLE else View.GONE
-            othersMessageTextView.text = message.message
-            othersTimeTextView.text = convertSimpleDateFormatToTime(message.sentTime)[1]
+            othersMessageTextView.text = messageDomain.message
+            othersTimeTextView.text = convertSimpleDateFormatToTime(messageDomain.sentTime)[1]
+            othersReadersTextView.text = readersLog.count { it.time.isEmpty() || it.time < messageDomain.sentTime }.toString()
 
             if (profileByteArray != null) Glide.with(itemView.context)
                 .load(profileByteArray)
@@ -79,6 +86,7 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
         private val myDateTextView: MaterialTextView = itemView.findViewById(R.id.tv_current_date_presentation_in_my_image_viewholder)
         private val myImageView: ShapeableImageView = itemView.findViewById(R.id.iv_my_image)
         private val myTimeTextView: MaterialTextView = itemView.findViewById(R.id.tv_my_image_time)
+        private val myReadersTextView: MaterialTextView = itemView.findViewById(R.id.tv_my_reader_logs_image_viewholder)
 
         init {
             myImageView.setOnClickListener {
@@ -86,8 +94,8 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
             }
         }
 
-        fun bind(message: Message, isDateVisible: Boolean, imageByteArray: ByteArray?) {
-            myDateTextView.text = convertSimpleDateFormatToTime(message.sentTime)[0]
+        fun bind(messageDomain: MessageDomain, isDateVisible: Boolean, imageByteArray: ByteArray?) {
+            myDateTextView.text = convertSimpleDateFormatToTime(messageDomain.sentTime)[0]
             myDateTextView.visibility = if (isDateVisible) View.VISIBLE else View.GONE
             if (imageByteArray != null) Glide.with(itemView.context)
                 .load(imageByteArray)
@@ -96,7 +104,8 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
                 .error(R.drawable.ic_outline_image_not_supported_24)
                 .skipMemoryCache(false)
                 .into(myImageView)
-            myTimeTextView.text = convertSimpleDateFormatToTime(message.sentTime)[1]
+            myTimeTextView.text = convertSimpleDateFormatToTime(messageDomain.sentTime)[1]
+            myReadersTextView.text = readersLog.count { it.time.isEmpty() || it.time < messageDomain.sentTime }.toString()
         }
     }
 
@@ -105,6 +114,7 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
         private val othersImageView: ShapeableImageView = itemView.findViewById(R.id.iv_others_image)
         private val othersTimeTextView: MaterialTextView = itemView.findViewById(R.id.tv_others_image_time)
         private val othersImageUserProfile: ShapeableImageView = itemView.findViewById(R.id.iv_others_image_user_profile)
+        private val othersReadersTextView: MaterialTextView = itemView.findViewById(R.id.tv_others_reader_logs_image_viewholder)
 
         init {
             othersImageView.setOnClickListener {
@@ -112,8 +122,8 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
             }
         }
 
-        fun bind(message: Message, isDateVisible: Boolean, imageByteArray: ByteArray?) {
-            othersDateTextView.text = convertSimpleDateFormatToTime(message.sentTime)[0]
+        fun bind(messageDomain: MessageDomain, isDateVisible: Boolean, imageByteArray: ByteArray?) {
+            othersDateTextView.text = convertSimpleDateFormatToTime(messageDomain.sentTime)[0]
             othersDateTextView.visibility = if (isDateVisible) View.VISIBLE else View.GONE
             if (imageByteArray != null) Glide.with(itemView.context)
                 .load(imageByteArray)
@@ -122,7 +132,8 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
                 .error(R.drawable.ic_outline_image_not_supported_24)
                 .skipMemoryCache(false)
                 .into(othersImageView)
-            othersTimeTextView.text = convertSimpleDateFormatToTime(message.sentTime)[1]
+            othersTimeTextView.text = convertSimpleDateFormatToTime(messageDomain.sentTime)[1]
+            othersReadersTextView.text = readersLog.count { it.time.isEmpty() || it.time < messageDomain.sentTime }.toString()
 
             if (profileByteArray != null) Glide.with(itemView.context)
                 .load(profileByteArray)
@@ -156,15 +167,15 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if (messageList.isEmpty()) return
+        if (messageDomainList.isEmpty()) return
         var isDateVisible = false
         // 이번 메시지 송신날짜와 이전 메시지 송신날짜가 다르면 isDateVisible 활성화
-        if (position == 0 || convertSimpleDateFormatToTime(messageList[position].sentTime)[0] != convertSimpleDateFormatToTime(messageList[position-1].sentTime)[0]) isDateVisible = true
+        if (position == 0 || convertSimpleDateFormatToTime(messageDomainList[position].sentTime)[0] != convertSimpleDateFormatToTime(messageDomainList[position-1].sentTime)[0]) isDateVisible = true
         when (holder.javaClass) {
-            MyMessageViewHolder::class.java -> (holder as MyMessageViewHolder).bind(messageList[position], isDateVisible)
-            MyImageViewHolder::class.java -> (holder as MyImageViewHolder).bind(messageList[position], isDateVisible, imageList[position])
-            OthersMessageViewHolder::class.java -> (holder as OthersMessageViewHolder).bind(messageList[position], isDateVisible)
-            OthersImageViewHolder::class.java -> (holder as OthersImageViewHolder).bind(messageList[position], isDateVisible, imageList[position])
+            MyMessageViewHolder::class.java -> (holder as MyMessageViewHolder).bind(messageDomainList[position], isDateVisible)
+            MyImageViewHolder::class.java -> (holder as MyImageViewHolder).bind(messageDomainList[position], isDateVisible, imageList[position])
+            OthersMessageViewHolder::class.java -> (holder as OthersMessageViewHolder).bind(messageDomainList[position], isDateVisible)
+            OthersImageViewHolder::class.java -> (holder as OthersImageViewHolder).bind(messageDomainList[position], isDateVisible, imageList[position])
         }
     }
 
@@ -180,17 +191,17 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
     }
 
     override fun getItemViewType(position: Int): Int {
-        if (messageList.isEmpty()) return EMPTY_MESSAGE
+        if (messageDomainList.isEmpty()) return EMPTY_MESSAGE
 
-        val currentMessage = messageList[position]
+        val currentMessage = messageDomainList[position]
 
         return when (senderUID) {
             currentMessage.senderId -> {
-                if (currentMessage.messageType == Message.TYPE_IMAGE) MY_IMAGE
+                if (currentMessage.messageType == MessageDomain.TYPE_IMAGE) MY_IMAGE
                 else MY_MESSAGE
             }
             else -> {
-                if (currentMessage.messageType == Message.TYPE_IMAGE) OTHERS_IMAGE
+                if (currentMessage.messageType == MessageDomain.TYPE_IMAGE) OTHERS_IMAGE
                 else OTHERS_MESSAGE
             }
         }
@@ -220,19 +231,19 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
         fun onClick(view: View, position: Int)
     }
 
-    class MessageDiffUtil : DiffUtil.ItemCallback<Message>() {
-        override fun areItemsTheSame(oldItem: Message, newItem: Message): Boolean {
+    class MessageDiffUtil : DiffUtil.ItemCallback<MessageDomain>() {
+        override fun areItemsTheSame(oldItem: MessageDomain, newItem: MessageDomain): Boolean {
             return oldItem.messageId == newItem.messageId
         }
 
-        override fun areContentsTheSame(oldItem: Message, newItem: Message): Boolean {
+        override fun areContentsTheSame(oldItem: MessageDomain, newItem: MessageDomain): Boolean {
             return oldItem == newItem
         }
     }
 
-    override fun submitList(list: MutableList<Message>?) {
+    override fun submitList(list: MutableList<MessageDomain>?) {
         super.submitList(list)
-        if (list != messageList) messageList = list!!.toList()
+        if (list != messageDomainList) messageDomainList = list!!.toList()
     }
 
     fun setImageProfileUri(byteArray: ByteArray) {
@@ -240,8 +251,14 @@ class MessageAdapter(var messageList: List<Message>, val senderUID: String) :
         notifyDataSetChanged()
     }
 
+    fun setReaderLog(list: List<ChatRoomDomain.ReaderLog>) {
+        this.readersLog.clear()
+        this.readersLog.addAll(list)
+        notifyDataSetChanged()
+    }
+
     private fun convertSimpleDateFormatToTime(sdf: String): Array<String> {
-        val dateToRead = if (sdf.isEmpty()) "" else sdf.substring(0, if (sdf.lastIndex >= 10) 10 else sdf.lastIndex).split('-').joinToString(".") { it.toInt().toString() }
+        val dateToRead = sdf.substring(0, if (sdf.lastIndex >= 10) 10 else sdf.lastIndex).split('-').joinToString(".") { it.toInt().toString() }
         val time = sdf.substring(11, 16).split(':').map { it.toInt().toString() }
         val timeToRead = (if (time[0].toInt() < 12) "오전 " + (if (time[0] != "0") time[0] else "12") else "오후 " + (if (time[0] != "12") (time[0].toInt()-12).toString() else "12")) + ":" + time[1].padStart(2, '0')
         return arrayOf(dateToRead, timeToRead)

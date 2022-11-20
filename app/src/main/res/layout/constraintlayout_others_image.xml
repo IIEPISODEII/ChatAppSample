@@ -47,12 +47,22 @@
         android:id="@+id/tv_others_image_time"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:paddingHorizontal="15dp"
-        android:paddingVertical="5dp"
+        android:paddingHorizontal="5dp"
         android:text="Time"
         android:textColor="#7F7F7F"
         android:textSize="12dp"
         app:layout_constraintBottom_toBottomOf="@id/iv_others_image"
+        app:layout_constraintStart_toEndOf="@id/iv_others_image" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/tv_others_reader_logs_image_viewholder"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="5dp"
+        android:text="1"
+        android:textColor="#F77700"
+        android:textSize="11dp"
+        app:layout_constraintBottom_toTopOf="@id/tv_others_image_time"
         app:layout_constraintStart_toEndOf="@id/iv_others_image" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

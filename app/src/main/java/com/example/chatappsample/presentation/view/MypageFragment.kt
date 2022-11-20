@@ -13,21 +13,18 @@ import androidx.lifecycle.ViewModelProvider
 import com.bumptech.glide.Glide
 import com.example.chatappsample.R
 import com.example.chatappsample.databinding.FragmentMyPageBinding
-import com.example.chatappsample.domain.dto.Message
-import com.example.chatappsample.domain.dto.User
+import com.example.chatappsample.domain.dto.UserDomain
 import com.example.chatappsample.presentation.viewmodel.UserViewModel
 import com.example.chatappsample.util.CharLengthInputFilter
 import com.example.chatappsample.util.LetterDigitsInputFilter
 import com.google.android.material.imageview.ShapeableImageView
-import java.text.SimpleDateFormat
-import java.util.*
 
 class MypageFragment : Fragment() {
 
     private val viewModel by lazy { ViewModelProvider(requireActivity())[UserViewModel::class.java] }
     private lateinit var mBinding: FragmentMyPageBinding
     private var onGetUserProfileListener: OnGetUserProfileListener? = null
-    private var myProfile: User? = User()
+    private var myProfile: UserDomain? = UserDomain()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -38,7 +35,7 @@ class MypageFragment : Fragment() {
         mBinding.lifecycleOwner = this.viewLifecycleOwner
         mBinding.viewModel = viewModel
 
-        viewModel.currentUser.observe(this.viewLifecycleOwner) {
+        viewModel.currentUserDomain.observe(this.viewLifecycleOwner) {
             println("USER PROFILE: ${it?.profileImage}")
             if (it != null && myProfile?.profileImage != it.profileImage) {
                 Glide

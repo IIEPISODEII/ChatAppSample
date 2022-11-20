@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.chatappsample.R
 import com.example.chatappsample.domain.repository.SharedPreferenceRepository
+import com.example.chatappsample.presentation.view.MainActivity.Companion.CURRENT_USER
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
@@ -35,7 +36,7 @@ class SplashActivity: AppCompatActivity() {
                     if (task.isSuccessful) {
                         finish()
                         val intent = Intent(this@SplashActivity, MainActivity::class.java).apply {
-                            putExtra("CURRENT_USER", task.result.user!!.uid)
+                            putExtra(CURRENT_USER, task.result.user!!.uid)
                         }
                         startActivity(intent)
                     } else {
