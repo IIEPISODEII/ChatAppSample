@@ -8,7 +8,8 @@ import javax.inject.Singleton
     modules = [
         DatabaseModule::class,
         DispatchModule::class,
-        RepositoryModule::class
+        RepositoryModule::class,
+        WorkerModule::class
     ]
 )
 

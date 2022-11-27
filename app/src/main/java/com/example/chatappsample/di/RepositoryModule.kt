@@ -2,6 +2,8 @@ package com.example.chatappsample.di
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Build
+import androidx.work.WorkManager
 import com.example.chatappsample.BaseApplication
 import com.example.chatappsample.data.repository.AppDatabase
 import com.example.chatappsample.data.repository.ChatRepositoryImpl
@@ -26,8 +28,8 @@ class RepositoryModule {
 
     @Singleton
     @Provides
-    fun provideUserRepository(firebaseDatabase: FirebaseDatabase, firebaseAuth: FirebaseAuth, firebaseStorage: FirebaseStorage, userRoom: AppDatabase) : UserRepository {
-        return UserRepositoryImpl(firebaseDatabase, firebaseAuth, firebaseStorage, userRoom)
+    fun provideUserRepository(firebaseDatabase: FirebaseDatabase, firebaseAuth: FirebaseAuth, firebaseStorage: FirebaseStorage, userRoom: AppDatabase, workManager: WorkManager) : UserRepository {
+        return UserRepositoryImpl(firebaseDatabase, firebaseAuth, firebaseStorage, userRoom, workManager)
     }
 
     @Singleton

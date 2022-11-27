@@ -178,10 +178,8 @@ class ChatRepositoryImpl @Inject constructor(
     }
 
     override suspend fun fetchChatRoomFromDB(chatRoomId: String): Flow<List<ChatRoomDomain.ReaderLog>> {
-        println("chatRoomId in RepoImpl: $chatRoomId")
         return roomDB.getChatRoomDao().fetchReaderLogs(targetChatRoom = chatRoomId).map { list ->
             list.map {
-                println("ReaderLog in RepoImpl : $list")
                 ChatRoomDomain.ReaderLog(it.participantsId, it.participationTime)
             }
         }

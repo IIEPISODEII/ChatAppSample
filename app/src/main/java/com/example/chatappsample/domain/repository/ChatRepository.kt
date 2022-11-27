@@ -1,6 +1,5 @@
 package com.example.chatappsample.domain.repository
 
-import com.example.chatappsample.data.entity.MessageData
 import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
 import com.example.chatappsample.domain.`interface`.OnFirebaseCommunicationListener
 import com.example.chatappsample.domain.dto.ChatRoomDomain

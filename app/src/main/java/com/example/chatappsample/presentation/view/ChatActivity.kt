@@ -26,6 +26,7 @@ import com.example.chatappsample.domain.`interface`.OnFirebaseCommunicationListe
 import com.example.chatappsample.domain.dto.MessageDomain
 import com.example.chatappsample.presentation.view.adapter.MessageAdapter
 import com.example.chatappsample.presentation.viewmodel.ChatViewModel
+import com.example.chatappsample.util.COERCE_DATE_FORMAT
 import com.example.chatappsample.util.FULL_DATE_FORMAT
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.imageview.ShapeableImageView
@@ -57,7 +58,12 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var messageAdapter: MessageAdapter
     private var messageText = ""
     private var isLoading = false
+
+    private var myId = ""
+    private var yourId = ""
     private var chatRoomId = ""
+
+    private val updateChatRoomScope = CoroutineScope(Dispatchers.IO)
 
     @RequiresApi(Build.VERSION_CODES.M)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -70,18 +76,18 @@ class ChatActivity : AppCompatActivity() {
 
         // 액션바 설정
         setSupportActionBar(toolbar)
-        toolbarTitleTextView.text = intent.getStringExtra(OTHER_NAME)
+        toolbarTitleTextView.text = intent.getStringExtra(YOUR_NAME)
         toolbarHomeButton.setOnClickListener { finish() }
         toolbarMenuButton.setOnClickListener { openDrawer() }
 
-        val otherID = intent.getStringExtra(OTHER_UID)
-        val myID = intent.getStringExtra(CURRENT_UID)
+        myId = intent.getStringExtra(CURRENT_UID) ?: ""
+        yourId = intent.getStringExtra(YOUR_ID) ?: ""
         chatRoomId = intent.getStringExtra(CHATROOM_ID)!!
 
         // 뷰모델 기본 리스너 설정
         chatViewModel.run {
             messageTxt.observe(this@ChatActivity) { messageText = it }
-            downloadProfileImage(otherID!!, object: OnFileDownloadListener {
+            downloadProfileImage(yourId, object: OnFileDownloadListener {
                 override fun onSuccess(byteArray: ByteArray) {
                     messageAdapter.setImageProfileUri(byteArray)
                 }
@@ -109,7 +115,7 @@ class ChatActivity : AppCompatActivity() {
                             messageId = sdf+UUID.randomUUID().toString(),
                             messageType = MessageDomain.TYPE_IMAGE,
                             message = selectedImageUri.toString(),
-                            senderId = myID!!,
+                            senderId = myId,
                             sentTime = sdf
                         )
                         lifecycleScope.launch(Dispatchers.IO) {
@@ -124,7 +130,7 @@ class ChatActivity : AppCompatActivity() {
                                         messageId = sdf+UUID.randomUUID().toString(),
                                         messageType = MessageDomain.TYPE_IMAGE,
                                         message = selectedImageUri.toString(),
-                                        senderId = myID!!,
+                                        senderId = myId,
                                         sentTime = sdf
                                     )
                                     chatViewModel.uploadFile(
@@ -141,7 +147,7 @@ class ChatActivity : AppCompatActivity() {
             }
 
         // 리사이클러뷰에 데이터 추가
-        messageAdapter = MessageAdapter(messageDomainList = listOf(), senderUID = myID ?: "")
+        messageAdapter = MessageAdapter(messageDomainList = listOf(), senderUID = myId)
         val llm = LinearLayoutManager(this@ChatActivity)
         chattingRecyclerView.apply {
             adapter = messageAdapter
@@ -218,7 +224,7 @@ class ChatActivity : AppCompatActivity() {
                     )
                 }
 
-                if (messageList.last().senderId == myID!!) {
+                if (messageList.last().senderId == myId) {
                     chattingRecyclerView.layoutManager?.scrollToPosition(messageAdapter.messageDomainList.lastIndex+1)
                 }
             }
@@ -261,7 +267,7 @@ class ChatActivity : AppCompatActivity() {
                 messageId = sdf+UUID.randomUUID().toString(),
                 messageType = MessageDomain.TYPE_NORMAL_TEXT,
                 message = messageText,
-                senderId = myID ?: "",
+                senderId = myId,
                 sentTime = sdf
             )
 
@@ -309,6 +315,37 @@ class ChatActivity : AppCompatActivity() {
                 }
             }
         })
+    }
+
+    override fun onResume() {
+        super.onResume()
+        chatViewModel.updateChatRoom(
+            myId,
+            yourId,
+            SimpleDateFormat(
+                COERCE_DATE_FORMAT,
+                Locale.KOREA
+            ).format(Date(System.currentTimeMillis())),
+            {},
+            {},
+            true
+        )
+    }
+
+    override fun onStop() {
+        super.onStop()
+
+        chatViewModel.updateChatRoom(
+            myId,
+            yourId,
+            SimpleDateFormat(
+                COERCE_DATE_FORMAT,
+                Locale.KOREA
+            ).format(Date(System.currentTimeMillis())),
+            {},
+            {},
+            false
+        )
     }
 
     @RequiresApi(Build.VERSION_CODES.P)
@@ -376,8 +413,8 @@ class ChatActivity : AppCompatActivity() {
     }
 
     companion object {
-        const val OTHER_NAME = "selected_name"
-        const val OTHER_UID = "selected_uid"
+        const val YOUR_NAME = "selected_name"
+        const val YOUR_ID = "selected_uid"
         const val CURRENT_UID = "current_uid"
         const val CHATROOM_ID = "chatroom_id"
     }

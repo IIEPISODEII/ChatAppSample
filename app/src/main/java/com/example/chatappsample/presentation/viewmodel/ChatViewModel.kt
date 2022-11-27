@@ -26,7 +26,8 @@ class ChatViewModel @Inject constructor(
     private val uploadFileUsecase: UploadFileUsecase,
     private val downloadFileUsecase: DownloadFileUsecase,
     private val downloadProfileImageUsecase: DownloadProfileImageUsecase,
-    private val fetchReaderLogAsFlowUsecase: FetchReaderLogAsFlowUsecase
+    private val fetchReaderLogAsFlowUsecase: FetchReaderLogAsFlowUsecase,
+    private val updateChatRoomUsecase: UpdateChatRoomUsecase
 ) : ViewModel(), Observable {
 
     companion object {
@@ -52,15 +53,12 @@ class ChatViewModel @Inject constructor(
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
-            println("fetchReaderLogsFromRoomDB0")
             fetchMessagesFromExternalDB(chatRoomId)
-            println("fetchReaderLogsFromRoomDB1")
             fetchMessagesFromRoomDB(chatRoomId)
-            println("fetchReaderLogsFromRoomDB2")
             fetchLastMessageFromRoomDB(chatRoomId)
-            println("fetchReaderLogsFromRoomDB3")
+        }
+        viewModelScope.launch(Dispatchers.IO) {
             fetchReaderLogsFromRoomDB(chatRoomId)
-            println("fetchReaderLogsFromRoomDB4")
         }
     }
 
@@ -145,10 +143,12 @@ class ChatViewModel @Inject constructor(
     }
 
     private suspend fun fetchReaderLogsFromRoomDB(chatRoomId: String) {
-        println("ViewModel, fetchReaderLogs, $chatRoomId")
         fetchReaderLogAsFlowUsecase(chatRoomId).stateIn(viewModelScope).collect {
-            println("ReaderLog in ViewModel: $it")
             _readerLogs.postValue(it)
         }
+    }
+
+    fun updateChatRoom(myId: String, yourId: String, time: String, onSuccess: (String) -> Unit, onFail: () -> Unit, enter: Boolean, coroutineScope: CoroutineScope = viewModelScope) {
+        updateChatRoomUsecase(myId, yourId, time, onSuccess, onFail, enter, coroutineScope)
     }
 }

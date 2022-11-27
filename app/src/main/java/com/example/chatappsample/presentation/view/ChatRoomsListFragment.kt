@@ -92,8 +92,8 @@ class ChatRoomsListFragment : Fragment() {
                 showProgressbar()
                 val yourInfo = rvAdapter.userDomainList[position]
                 val intent = Intent(requireContext(), ChatActivity::class.java).apply {
-                    putExtra(ChatActivity.OTHER_NAME, yourInfo.name)
-                    putExtra(ChatActivity.OTHER_UID, yourInfo.uid)
+                    putExtra(ChatActivity.YOUR_NAME, yourInfo.name)
+                    putExtra(ChatActivity.YOUR_ID, yourInfo.uid)
                     putExtra(ChatActivity.CURRENT_UID, currentUserId)
                 }
                 viewModel.updateChatRoom(

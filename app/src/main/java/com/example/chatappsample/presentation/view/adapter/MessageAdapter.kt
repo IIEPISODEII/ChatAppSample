@@ -51,8 +51,14 @@ class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: 
             myDateTextView.visibility = if (isDateVisible) View.VISIBLE else View.GONE
             myMessageTextView.text = messageDomain.message
             myTimeTextView.text = convertSimpleDateFormatToTime(messageDomain.sentTime)[1]
-            myReadersTextView.text = readersLog.count { it.time.isEmpty() || it.time < messageDomain.sentTime }.toString()
-            println("readersLog: $readersLog")
+
+            val leftsToRead = readersLog.count { it.time.isEmpty() || it.time < messageDomain.sentTime }
+            if (leftsToRead == 0) {
+                myReadersTextView.visibility = View.INVISIBLE
+            } else {
+                myReadersTextView.text = leftsToRead.toString()
+                myReadersTextView.visibility = View.VISIBLE
+            }
         }
     }
 
@@ -74,7 +80,14 @@ class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: 
             othersDateTextView.visibility = if (isDateVisible) View.VISIBLE else View.GONE
             othersMessageTextView.text = messageDomain.message
             othersTimeTextView.text = convertSimpleDateFormatToTime(messageDomain.sentTime)[1]
-            othersReadersTextView.text = readersLog.count { it.time.isEmpty() || it.time < messageDomain.sentTime }.toString()
+
+            val leftsToRead = readersLog.count { it.time.isEmpty() || it.time < messageDomain.sentTime }
+            if (leftsToRead == 0) {
+                othersReadersTextView.visibility = View.INVISIBLE
+            } else {
+                othersReadersTextView.text = leftsToRead.toString()
+                othersReadersTextView.visibility = View.VISIBLE
+            }
 
             if (profileByteArray != null) Glide.with(itemView.context)
                 .load(profileByteArray)
@@ -105,7 +118,14 @@ class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: 
                 .skipMemoryCache(false)
                 .into(myImageView)
             myTimeTextView.text = convertSimpleDateFormatToTime(messageDomain.sentTime)[1]
-            myReadersTextView.text = readersLog.count { it.time.isEmpty() || it.time < messageDomain.sentTime }.toString()
+
+            val leftsToRead = readersLog.count { it.time.isEmpty() || it.time < messageDomain.sentTime }
+            if (leftsToRead == 0) {
+                myReadersTextView.visibility = View.INVISIBLE
+            } else {
+                myReadersTextView.text = leftsToRead.toString()
+                myReadersTextView.visibility = View.VISIBLE
+            }
         }
     }
 
@@ -133,7 +153,14 @@ class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: 
                 .skipMemoryCache(false)
                 .into(othersImageView)
             othersTimeTextView.text = convertSimpleDateFormatToTime(messageDomain.sentTime)[1]
-            othersReadersTextView.text = readersLog.count { it.time.isEmpty() || it.time < messageDomain.sentTime }.toString()
+
+            val leftsToRead = readersLog.count { it.time.isEmpty() || it.time < messageDomain.sentTime }
+            if (leftsToRead == 0) {
+                othersReadersTextView.visibility = View.INVISIBLE
+            } else {
+                othersReadersTextView.text = leftsToRead.toString()
+                othersReadersTextView.visibility = View.VISIBLE
+            }
 
             if (profileByteArray != null) Glide.with(itemView.context)
                 .load(profileByteArray)
@@ -254,6 +281,7 @@ class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: 
     fun setReaderLog(list: List<ChatRoomDomain.ReaderLog>) {
         this.readersLog.clear()
         this.readersLog.addAll(list)
+        println("ReadersLog in MessageAdapter: $readersLog")
         notifyDataSetChanged()
     }
 
