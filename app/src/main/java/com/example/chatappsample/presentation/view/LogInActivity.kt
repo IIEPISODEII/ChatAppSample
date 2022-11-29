@@ -47,11 +47,11 @@ class LogInActivity : AppCompatActivity() {
             val password = passwordEditText.text.toString()
 
             if (email.isEmpty()) {
-                Toast.makeText(this, "Please input your e-mail.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "이메일을 입력해주세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             if (password.isEmpty()) {
-                Toast.makeText(this, "Please input password.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "비밀번호를 입력해주세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -73,7 +73,7 @@ class LogInActivity : AppCompatActivity() {
             val password = sharedPreferenceRepo.getPassword()
 
             login(email, password)
-            Toast.makeText(this, "Auto-Logined", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "자동로그인 완료", Toast.LENGTH_SHORT).show()
         }
 
         super.onResume()

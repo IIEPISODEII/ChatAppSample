@@ -5,9 +5,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
-import com.example.chatappsample.domain.`interface`.OnGetDataListener
-import com.example.chatappsample.domain.`interface`.OnGetRegistrationListener
+import com.example.chatappsample.domain.`interface`.*
 import com.example.chatappsample.domain.dto.MessageDomain
 import com.example.chatappsample.domain.dto.UserDomain
 import com.example.chatappsample.domain.usecase.*
@@ -30,7 +28,8 @@ class UserViewModel @Inject constructor(
     private val receiveAllUsersFromExternalDBUsecase: ReceiveAllUsersFromExternalDBUsecase,
     private val getAllUsersUsecase: GetAllUsersFromRoomDBUsecase,
     private val signOutUsecase: SignOutUsecase,
-    private val signUpUsecase: SignUpUsecase,
+    private val sendEmailVerificationUsecase: SendEmailVerificationUsecase,
+    private val emailVerificationUsecase: SignUpWithVerifiedEmail,
     private val setAutoLoginCheckUsecase: SetAutoLoginCheckUsecase,
     private val updateCurrentUserUsecase: UpdateCurrentUserUsercase,
     private val downloadProfileImageUsecase: DownloadProfileImageUsecase,
@@ -79,33 +78,16 @@ class UserViewModel @Inject constructor(
 
     fun receiveAllUsersFromExternalDB() = receiveAllUsersFromExternalDBUsecase(viewModelScope)
 
-    private val _registrationStatus = MutableLiveData<Resource<AuthResult?>>()
-    val registrationStatus: LiveData<Resource<AuthResult?>>
-        get() = _registrationStatus
-
-    private val _isSignedUp = MutableLiveData(false)
-
     fun signOut() {
         if (signOutUsecase.signOut()) _currentUserDomain.value = null
     }
 
-    fun signUp(name: String, email: String, password: String) {
-        signUpUsecase.signUp(name, email, password, object : OnGetRegistrationListener {
-            override fun onSuccess(task: Task<AuthResult>) {
-                _isSignedUp.postValue(true)
-                _registrationStatus.postValue(Resource.Success(task.result))
-            }
+    fun sendVerificationEmail(email: String, password: String, listener: OnSendEmailVerificationListener) {
+        sendEmailVerificationUsecase(email, password, listener)
+    }
 
-            override fun onStart() {
-                _registrationStatus.postValue(Resource.Loading(null))
-            }
-
-            override fun <T> onFailure(error: T) {
-                if (error is Exception) Log.e("UserViewModel", error.message ?: "")
-                else return
-            }
-
-        })
+    fun signUpWithVerifiedEmail(name: String, email: String, password: String, listener: OnEmailVerificationListener) {
+        emailVerificationUsecase(listener)
     }
 
     fun cancelAutoLogin() {
@@ -141,5 +123,11 @@ class UserViewModel @Inject constructor(
 
     fun updateChatRoom(myId: String, yourId: String, time: String, onSuccess: (String) -> Unit, onFail: () -> Unit, enter: Boolean) {
         updateChatRoomUsecase(myId, yourId, time, onSuccess, onFail, enter, viewModelScope)
+    }
+
+    companion object {
+        const val SEND_EMAIL_VERIFICATION_SUCCESS = 0
+        const val SEND_EMAIL_VERIFICATION_FAIL = 1
+        const val SEND_EMAIL_VERIFICATION_ON_PROGRESS = 2
     }
 }

@@ -11,9 +11,7 @@ import com.example.chatappsample.data.entity.UserData
 import com.example.chatappsample.data.repository.ChatRepositoryImpl.Companion.FIREBASE_FIRST_CHILD_CHATS
 import com.example.chatappsample.data.repository.worker.UpdateChatroomWorker
 import com.example.chatappsample.di.IoDispatcher
-import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
-import com.example.chatappsample.domain.`interface`.OnGetDataListener
-import com.example.chatappsample.domain.`interface`.OnGetRegistrationListener
+import com.example.chatappsample.domain.`interface`.*
 import com.example.chatappsample.domain.dto.UserDomain
 import com.example.chatappsample.domain.repository.UserRepository
 import com.example.chatappsample.util.TEN_MEGABYTE
@@ -103,11 +101,10 @@ class UserRepositoryImpl @Inject constructor(
         return false
     }
 
-    override fun signUp(
-        name: String,
+    override fun sendVerificationEmail(
         email: String,
         password: String,
-        listener: OnGetRegistrationListener
+        listener: OnSendEmailVerificationListener
     ) {
         listener.onStart()
 
@@ -115,23 +112,40 @@ class UserRepositoryImpl @Inject constructor(
             .createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    db.child(FIREBASE_FIRST_CHILD_USERS)
-                        .child(task.result.user!!.uid)
-                        .setValue(
-                            UserDomain(
-                                name = name,
-                                uid = task.result.user!!.uid,
-                                profileImage = "",
-                                email = email
-                            )
-                        )
-
-                    listener.onSuccess(task)
+                    firebaseAuth
+                        .currentUser
+                        ?.sendEmailVerification()
+                        ?.addOnSuccessListener {
+                            listener.onSuccess()
+                        }
+                        ?.addOnFailureListener {
+                            listener.onSendEmailVerificationFail()
+                        }
                 } else {
                     // If sign in fails, display a message to the user.
                     listener.onFailure(task.exception)
                 }
             }
+    }
+
+    override fun signUpWithVerifiedEmail(listener: OnEmailVerificationListener) {
+        val user = firebaseAuth.currentUser ?: return
+
+        if (user.isEmailVerified) {
+            db.child(FIREBASE_FIRST_CHILD_USERS)
+                .child(user.uid)
+                .setValue(
+                    UserDomain(
+                        name = "",
+                        uid = user.uid,
+                        profileImage = "",
+                        email = user.email!!
+                    )
+                )
+            listener.onSuccess()
+        } else {
+            listener.onFailure()
+        }
     }
 
     override fun updateCurrentUser(userDomain: UserDomain, changeProfileImage: Boolean) {

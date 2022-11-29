@@ -1,8 +1,6 @@
 package com.example.chatappsample.domain.repository
 
-import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
-import com.example.chatappsample.domain.`interface`.OnGetDataListener
-import com.example.chatappsample.domain.`interface`.OnGetRegistrationListener
+import com.example.chatappsample.domain.`interface`.*
 import com.example.chatappsample.domain.dto.UserDomain
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -29,7 +27,9 @@ interface UserRepository {
      * @param password 유저 비밀번호
      * @param listener 유저 정보 등록할 경우 콜백 등록
      * **/
-    fun signUp(name: String, email: String, password: String, listener: OnGetRegistrationListener)
+    fun sendVerificationEmail(email: String, password: String, listener: OnSendEmailVerificationListener)
+
+    fun signUpWithVerifiedEmail(listener: OnEmailVerificationListener)
 
     /** 파이어베이스 데이터베이스에 유저 정보 저장
      * @param userDomain 저장할 유저 정보
