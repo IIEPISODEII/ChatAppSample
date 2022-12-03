@@ -29,7 +29,7 @@ interface UserRepository {
      * **/
     fun sendVerificationEmail(email: String, password: String, listener: OnSendEmailVerificationListener)
 
-    fun signUpWithVerifiedEmail(listener: OnEmailVerificationListener)
+    fun signUp(name: String = "", listener: OnEmailVerificationListener)
 
     /** 파이어베이스 데이터베이스에 유저 정보 저장
      * @param userDomain 저장할 유저 정보

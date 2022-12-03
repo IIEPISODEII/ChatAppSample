@@ -6,74 +6,9 @@
     android:layout_height="match_parent"
     tools:context=".presentation.view.LogInActivity">
 
-    <com.google.android.material.textview.MaterialTextView
-        android:id="@+id/tv_chat_app_logo"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Chat App"
-        android:textStyle="bold"
-        android:textColor="@color/skyblue"
-        android:textSize="40sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="35dp"
-        app:layout_constraintBottom_toTopOf="@id/et_login_e_mail"/>
-
-    <com.google.android.material.textfield.TextInputEditText
-        android:id="@+id/et_login_e_mail"
+    <FrameLayout
+        android:id="@+id/framelayout_login_activity"
         android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:layout_marginHorizontal="45dp"
-        android:background="@drawable/layout_round_textview"
-        android:hint="@string/e_mail_address"
-        android:paddingHorizontal="15dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.4" />
-
-    <com.google.android.material.textfield.TextInputEditText
-        android:id="@+id/et_login_password"
-        android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:layout_marginHorizontal="45dp"
-        android:layout_marginTop="10dp"
-        android:background="@drawable/layout_round_textview"
-        android:hint="@string/password"
-        android:inputType="textPassword"
-        android:paddingHorizontal="15dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/et_login_e_mail" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_login_login"
-        android:layout_width="200dp"
-        android:layout_height="50dp"
-        android:layout_marginTop="75dp"
-        android:text="@string/login"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/et_login_password" />
-
-    <com.google.android.material.button.MaterialButton
-        style="@style/Widget.Material3.Button.OutlinedButton"
-        android:id="@+id/btn_login_sign_up"
-        android:layout_width="200dp"
-        android:layout_height="50dp"
-        android:layout_marginTop="10dp"
-        android:text="@string/sign_up"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_login_login" />
-
-    <com.google.android.material.checkbox.MaterialCheckBox
-        android:id="@+id/checkbox_auto_login"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/auto_login"
-        app:layout_constraintTop_toBottomOf="@id/et_login_password"
-        app:layout_constraintLeft_toLeftOf="@id/et_login_password"/>
+        android:layout_height="match_parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

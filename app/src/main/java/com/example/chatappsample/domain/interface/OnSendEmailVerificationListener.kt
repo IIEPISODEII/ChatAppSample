@@ -6,6 +6,4 @@ interface OnSendEmailVerificationListener {
     fun onSendEmailVerificationFail()
 
     fun onStart()
-
-    fun <T : Any?> onFailure(error: T)
 }

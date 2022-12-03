@@ -14,4 +14,5 @@
     <string name="login">로그인</string>
     <string name="sign_up"><b>새 계정</b> 생성</string>
     <string name="send_email_verification">이메일 인증</string>
+    <string name="continue_if_verified">계속하기</string>
 </resources>

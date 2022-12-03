@@ -122,13 +122,12 @@ class UserRepositoryImpl @Inject constructor(
                             listener.onSendEmailVerificationFail()
                         }
                 } else {
-                    // If sign in fails, display a message to the user.
-                    listener.onFailure(task.exception)
+                    listener.onSendEmailVerificationFail()
                 }
             }
     }
 
-    override fun signUpWithVerifiedEmail(listener: OnEmailVerificationListener) {
+    override fun signUp(name: String, listener: OnEmailVerificationListener) {
         val user = firebaseAuth.currentUser ?: return
 
         if (user.isEmailVerified) {
@@ -136,15 +135,24 @@ class UserRepositoryImpl @Inject constructor(
                 .child(user.uid)
                 .setValue(
                     UserDomain(
-                        name = "",
+                        name = name,
                         uid = user.uid,
                         profileImage = "",
                         email = user.email!!
                     )
                 )
-            listener.onSuccess()
+                .addOnSuccessListener {
+                    listener.onSuccess()
+                }
         } else {
-            listener.onFailure()
+            user
+                .sendEmailVerification()
+                .addOnSuccessListener {
+                    listener.onFailEmailVerification()
+                }
+                .addOnFailureListener {
+                    listener.onFail(it)
+                }
         }
     }
 
@@ -156,22 +164,22 @@ class UserRepositoryImpl @Inject constructor(
             email = userDomain.email
         )
 
-        db
-            .child(FIREBASE_FIRST_CHILD_USERS)
-            .child(userData.uid)
-            .setValue(userDomain)
-            .addOnSuccessListener {
-                if (changeProfileImage) {
-                    val metadata = storageMetadata {
-                        contentType = "image/jpeg"
-                    }
-
-                    firebaseStorage.reference
-                        .child(FIREBASE_FIRST_CHILD_PROFILEIMAGES + userDomain.uid)
-                        .putFile(Uri.parse(userDomain.profileImage), metadata)
-
-                }
-            }
+//        db
+//            .child(FIREBASE_FIRST_CHILD_USERS)
+//            .child(userData.uid)
+//            .setValue(userDomain)
+//            .addOnSuccessListener {
+//                if (changeProfileImage) {
+//                    val metadata = storageMetadata {
+//                        contentType = "image/jpeg"
+//                    }
+//
+//                    firebaseStorage.reference
+//                        .child(FIREBASE_FIRST_CHILD_PROFILEIMAGES + userDomain.uid)
+//                        .putFile(Uri.parse(userDomain.profileImage), metadata)
+//
+//                }
+//            }
 
         if (changeProfileImage) {
 
@@ -181,16 +189,21 @@ class UserRepositoryImpl @Inject constructor(
 
             firebaseStorage
                 .reference
-                .child(FIREBASE_FIRST_CHILD_PROFILEIMAGES + userDomain.uid)
-                .putFile(Uri.parse(userDomain.profileImage), metadata)
+                .child(FIREBASE_FIRST_CHILD_PROFILEIMAGES + userData.uid)
+                .putFile(Uri.parse(userData.profileImage), metadata)
                 .addOnCompleteListener { task ->
                     db
                         .child(FIREBASE_FIRST_CHILD_USERS)
-                        .child(userDomain.uid)
-                        .setValue(userDomain.apply {
+                        .child(userData.uid)
+                        .setValue(userData.apply {
                             this.profileImage = task.result.uploadSessionUri.toString()
                         })
                 }
+        } else {
+            db
+                .child(FIREBASE_FIRST_CHILD_USERS)
+                .child(userData.uid)
+                .setValue(userData)
         }
     }
 

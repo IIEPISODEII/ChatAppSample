@@ -9,14 +9,9 @@ import com.example.chatappsample.domain.`interface`.*
 import com.example.chatappsample.domain.dto.MessageDomain
 import com.example.chatappsample.domain.dto.UserDomain
 import com.example.chatappsample.domain.usecase.*
-import com.example.chatappsample.util.Resource
-import com.google.android.gms.tasks.Task
-import com.google.firebase.auth.AuthResult
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -29,7 +24,7 @@ class UserViewModel @Inject constructor(
     private val getAllUsersUsecase: GetAllUsersFromRoomDBUsecase,
     private val signOutUsecase: SignOutUsecase,
     private val sendEmailVerificationUsecase: SendEmailVerificationUsecase,
-    private val emailVerificationUsecase: SignUpWithVerifiedEmail,
+    private val emailVerificationUsecase: SignUpWithVerifiedEmailUsecase,
     private val setAutoLoginCheckUsecase: SetAutoLoginCheckUsecase,
     private val updateCurrentUserUsecase: UpdateCurrentUserUsercase,
     private val downloadProfileImageUsecase: DownloadProfileImageUsecase,
@@ -86,8 +81,8 @@ class UserViewModel @Inject constructor(
         sendEmailVerificationUsecase(email, password, listener)
     }
 
-    fun signUpWithVerifiedEmail(name: String, email: String, password: String, listener: OnEmailVerificationListener) {
-        emailVerificationUsecase(listener)
+    fun signUp(name: String, listener: OnEmailVerificationListener) {
+        emailVerificationUsecase(name, listener)
     }
 
     fun cancelAutoLogin() {

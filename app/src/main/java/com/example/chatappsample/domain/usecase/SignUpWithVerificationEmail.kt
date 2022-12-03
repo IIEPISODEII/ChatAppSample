@@ -1,14 +1,13 @@
 package com.example.chatappsample.domain.usecase
 
 import com.example.chatappsample.domain.`interface`.OnEmailVerificationListener
-import com.example.chatappsample.domain.`interface`.OnSendEmailVerificationListener
 import com.example.chatappsample.domain.repository.UserRepository
 import javax.inject.Inject
 
-class SignUpWithVerifiedEmail @Inject constructor(
+class SignUpWithVerifiedEmailUsecase @Inject constructor(
     private val userRepository: UserRepository
 ) {
-    operator fun invoke(listener: OnEmailVerificationListener) {
-        userRepository.signUpWithVerifiedEmail(listener)
+    operator fun invoke(name: String = "", listener: OnEmailVerificationListener) {
+        userRepository.signUp(name, listener)
     }
 }

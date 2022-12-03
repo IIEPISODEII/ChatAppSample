@@ -22,6 +22,7 @@
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/drawable/layout_sent_message_tv.xml" value="0.2875" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/drawable/layout_user_rvitem.xml" value="0.134" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/activity_chat.xml" value="0.1" />
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/activity_email_verification.xml" value="0.3619791666666667" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/activity_login.xml" value="0.33" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/activity_main.xml" value="0.1" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/activity_sign_up.xml" value="0.28823529411764703" />
@@ -38,7 +39,11 @@
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/content_main.xml" value="0.36216779572694113" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/dialog_authorization_check.xml" value="0.30973451327433627" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/fragment_chatting_list.xml" value="0.3609375" />
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/fragment_create_new_profile.xml" value="0.3619791666666667" />
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/fragment_creating_new_account.xml" value="0.3619791666666667" />
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/fragment_email_verification.xml" value="0.3619791666666667" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/fragment_first.xml" value="0.358695652173913" />
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/fragment_login.xml" value="0.3619791666666667" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/fragment_my_page.xml" value="0.2519280205655527" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/fragment_second.xml" value="0.14722222222222223" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/recyclerview_user.xml" value="0.18385416666666668" />
