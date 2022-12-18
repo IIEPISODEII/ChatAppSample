@@ -37,7 +37,7 @@ interface ChatRepository {
         onFirebaseCommunicationListener: OnFirebaseCommunicationListener
     )
 
-    suspend fun takeLastMessageOfChatRoom(
+    suspend fun fetchLastMessageOfChatRoom(
         chatRoom: String
     ): Flow<MessageDomain?>
 
@@ -48,5 +48,5 @@ interface ChatRepository {
 
     suspend fun fetchChatRoomFromDB(
         chatRoomId: String
-    ): Flow<List<ChatRoomDomain.ReaderLog>>
+    ): Flow<List<ChatRoomDomain.ReaderLogDomain>>
 }

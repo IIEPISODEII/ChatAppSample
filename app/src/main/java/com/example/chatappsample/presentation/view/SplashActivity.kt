@@ -1,16 +1,12 @@
 package com.example.chatappsample.presentation.view
 
-import android.app.Dialog
 import android.content.Intent
-import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.chatappsample.R
 import com.example.chatappsample.domain.repository.SharedPreferenceRepository
 import com.example.chatappsample.presentation.view.MainActivity.Companion.CURRENT_USER
-import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -42,14 +38,14 @@ class SplashActivity: AppCompatActivity() {
                     } else {
                         Toast.makeText(this@SplashActivity, "로그인에 실패했습니다.", Toast.LENGTH_SHORT).show()
                         finish()
-                        val intent = Intent(this@SplashActivity, LogInActivity::class.java)
+                        val intent = Intent(this@SplashActivity, SignInActivity::class.java)
                         startActivity(intent)
                     }
                 }
 
         } else {
             finish()
-            val intent = Intent(this@SplashActivity, LogInActivity::class.java)
+            val intent = Intent(this@SplashActivity, SignInActivity::class.java)
             startActivity(intent)
         }
     }

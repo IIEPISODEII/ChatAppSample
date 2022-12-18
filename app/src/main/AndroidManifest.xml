@@ -28,10 +28,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".presentation.view.LogInActivity"
-            android:exported="true"/>
-        <activity
-            android:name=".presentation.view.SignUpActivity"
+            android:name=".presentation.view.SignInActivity"
             android:exported="true"/>
         <activity
             android:name=".presentation.view.MainActivity"

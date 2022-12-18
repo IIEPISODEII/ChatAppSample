@@ -1,7 +1,9 @@
 package com.example.chatappsample.domain.`interface`
 
+import com.example.chatappsample.domain.dto.UserDomain
+
 interface OnEmailVerificationListener {
-    fun onSuccess()
+    fun onSuccess(user: UserDomain)
 
     fun onFailEmailVerification()
 

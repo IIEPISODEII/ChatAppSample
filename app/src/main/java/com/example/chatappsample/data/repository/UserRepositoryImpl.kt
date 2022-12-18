@@ -3,15 +3,15 @@ package com.example.chatappsample.data.repository
 import android.net.Uri
 import android.os.Build
 import android.util.Log
-import androidx.annotation.RequiresApi
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
 import com.example.chatappsample.data.entity.ChatRoomData
+import com.example.chatappsample.data.entity.ReaderLogData
 import com.example.chatappsample.data.entity.UserData
 import com.example.chatappsample.data.repository.ChatRepositoryImpl.Companion.FIREBASE_FIRST_CHILD_CHATS
 import com.example.chatappsample.data.repository.worker.UpdateChatroomWorker
-import com.example.chatappsample.di.IoDispatcher
 import com.example.chatappsample.domain.`interface`.*
+import com.example.chatappsample.domain.dto.ChatRoomDomain
 import com.example.chatappsample.domain.dto.UserDomain
 import com.example.chatappsample.domain.repository.UserRepository
 import com.example.chatappsample.util.TEN_MEGABYTE
@@ -22,9 +22,9 @@ import com.google.firebase.storage.ktx.storageMetadata
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.forEach
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.*
 import javax.inject.Inject
 
@@ -38,7 +38,7 @@ class UserRepositoryImpl @Inject constructor(
 
     private val db = firebaseDatabase.reference
 
-    override fun getCurrentUser(listener: OnGetDataListener) {
+    override fun fetchCurrentUser(listener: OnGetDataListener) {
         val firebaseUserId = firebaseAuth.currentUser?.uid ?: "NO ID"
 
         db
@@ -57,7 +57,7 @@ class UserRepositoryImpl @Inject constructor(
 
     private fun insertUser(userData: UserData) = roomDB.getUserDao().insertUser(userData)
 
-    override fun receiveAllUsersFromExternalDB(coroutineScope: CoroutineScope) {
+    override fun fetchUserListFromExternalDB(coroutineScope: CoroutineScope) {
         db
             .child(FIREBASE_FIRST_CHILD_USERS)
             .addChildEventListener(object : ChildEventListener {
@@ -70,13 +70,10 @@ class UserRepositoryImpl @Inject constructor(
                 }
 
                 override fun onChildRemoved(snapshot: DataSnapshot) {
-                    coroutineScope.launch(Dispatchers.IO) {
-                        roomDB.getUserDao().deleteUser(snapshot.getValue(UserData::class.java)!!)
-                    }
+                    coroutineScope.launch(Dispatchers.IO) { roomDB.getUserDao().deleteUser(snapshot.getValue(UserData::class.java)!!) }
                 }
 
                 override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {
-
                 }
 
                 override fun onCancelled(error: DatabaseError) {
@@ -85,12 +82,23 @@ class UserRepositoryImpl @Inject constructor(
             })
     }
 
-    override suspend fun getAllUsersFromRoomDB(): Flow<List<UserDomain>> {
+    override suspend fun fetchUserListFromRoomDB(): Flow<List<UserDomain>> {
         return roomDB
             .getUserDao()
             .getAllUserList()
             .map { list ->
                 list.map { userData -> userData.toDomain() }
+            }
+    }
+
+    override fun signIn(email: String, password: String, listener: OnSignInListener) {
+        firebaseAuth
+            .signInWithEmailAndPassword(email, password)
+            .addOnSuccessListener {
+                listener.onSuccess(it)
+            }
+            .addOnFailureListener {
+                listener.onFail(it)
             }
     }
 
@@ -127,33 +135,37 @@ class UserRepositoryImpl @Inject constructor(
             }
     }
 
+    private var reloadCnt = 0
     override fun signUp(name: String, listener: OnEmailVerificationListener) {
-        val user = firebaseAuth.currentUser ?: return
+        reloadCnt ++
+        val currentUser = firebaseAuth.currentUser ?: return
 
-        if (user.isEmailVerified) {
-            db.child(FIREBASE_FIRST_CHILD_USERS)
-                .child(user.uid)
-                .setValue(
-                    UserDomain(
-                        name = name,
-                        uid = user.uid,
-                        profileImage = "",
-                        email = user.email!!
-                    )
-                )
-                .addOnSuccessListener {
-                    listener.onSuccess()
-                }
-        } else {
-            user
-                .sendEmailVerification()
-                .addOnSuccessListener {
-                    listener.onFailEmailVerification()
-                }
-                .addOnFailureListener {
-                    listener.onFail(it)
-                }
+        currentUser.reload().addOnCompleteListener {
+            if (reloadCnt > 3) return@addOnCompleteListener
+            if (!it.isSuccessful) signUp(name, listener)
+            println("currentUser: ${currentUser.uid}, ${currentUser.email}, ${currentUser.isEmailVerified}")
+
+            if (currentUser.isEmailVerified) {
+                val userDomain = UserDomain(name, currentUser.email!!, currentUser.uid, "")
+
+                db.child(FIREBASE_FIRST_CHILD_USERS)
+                    .child(currentUser.uid)
+                    .setValue(userDomain)
+                    .addOnSuccessListener {
+                        listener.onSuccess(userDomain)
+                    }
+            } else {
+                currentUser
+                    .sendEmailVerification()
+                    .addOnSuccessListener {
+                        listener.onFailEmailVerification()
+                    }
+                    .addOnFailureListener {
+                        listener.onFail(it)
+                    }
+            }
         }
+
     }
 
     override fun updateCurrentUser(userDomain: UserDomain, changeProfileImage: Boolean) {
@@ -161,7 +173,8 @@ class UserRepositoryImpl @Inject constructor(
             name = userDomain.name,
             uid = userDomain.uid,
             profileImage = userDomain.profileImage,
-            email = userDomain.email
+            email = userDomain.email,
+            lastTimeStamp = userDomain.lastTimeStamp
         )
 
 //        db
@@ -268,8 +281,11 @@ class UserRepositoryImpl @Inject constructor(
 
                                     val pWorker = object : UpdateChatroomWorker.Work {
                                         override fun doWork() {
-                                            roomDB.getChatRoomDao().insertChatRoom(chatRoom = ChatRoomData(chatRoomId = randomChatRoomId, participantsId = myId, participationTime = time))
-                                            roomDB.getChatRoomDao().insertChatRoom(chatRoom = ChatRoomData(chatRoomId = randomChatRoomId, participantsId = yourId, participationTime = ""))
+                                            val myChatRoomData = ChatRoomData(myId, randomChatRoomId, ReaderLogData(randomChatRoomId, myId, "9"))
+                                            val yourChatRoomData = ChatRoomData(yourId, randomChatRoomId, ReaderLogData(randomChatRoomId, yourId, ""))
+
+                                            roomDB.getChatRoomDao().insertChatRoom(myChatRoomData)
+                                            roomDB.getChatRoomDao().insertChatRoom(yourChatRoomData)
                                         }
                                     }
                                     UpdateChatroomWorker.setWork(pWorker)
@@ -296,7 +312,8 @@ class UserRepositoryImpl @Inject constructor(
 
                                     val pWorker = object : UpdateChatroomWorker.Work {
                                         override fun doWork() {
-                                            roomDB.getChatRoomDao().insertChatRoom(chatRoom = ChatRoomData(chatRoomId = currentChatRoomId, participantsId = myId, participationTime = insertTime))
+                                            val myChatRoomData = ChatRoomData(myId, currentChatRoomId, ReaderLogData(currentChatRoomId, myId, insertTime))
+                                            roomDB.getChatRoomDao().insertChatRoom(myChatRoomData)
                                         }
                                     }
 
@@ -323,6 +340,26 @@ class UserRepositoryImpl @Inject constructor(
 
         } else {
             Log.d("UserRepoImpl", "데이터 동기화 실패 - 원인: API Level 미달")
+        }
+    }
+
+    override suspend fun fetchChatRoomList(
+        currentUserId: String
+    ): Flow<List<ChatRoomDomain>> {
+        val chatRoomDataList = roomDB.getChatRoomDao().getChatRoomList(currentUserId)
+
+        return chatRoomDataList.map { chatRoomList ->
+            val chatRoomDomainList = mutableListOf<ChatRoomDomain>()
+            chatRoomList.forEach { chatRoomData ->
+                val readerLogItem = ChatRoomDomain.ReaderLogDomain(
+                    chatRoomData.readerLog.userId,
+                    chatRoomData.readerLog.readTime
+                )
+
+                val chatRoomDomain = ChatRoomDomain(chatRoomData.chatRoomId, listOf(readerLogItem))
+                chatRoomDomainList.add(chatRoomDomain)
+            }
+            chatRoomDomainList
         }
     }
 

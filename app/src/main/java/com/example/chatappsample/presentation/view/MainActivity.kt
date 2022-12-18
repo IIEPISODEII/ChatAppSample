@@ -10,37 +10,43 @@ import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.bumptech.glide.Glide
 import com.example.chatappsample.R
 import com.example.chatappsample.databinding.ActivityMainBinding
 import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
 import com.example.chatappsample.domain.dto.UserDomain
+import com.example.chatappsample.domain.repository.UserRepository
 import com.example.chatappsample.presentation.viewmodel.UserViewModel
 import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
-import java.lang.Exception
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : FragmentActivity() {
 
+    @Inject
+    lateinit var userRepo: UserRepository
+
     val viewModel: UserViewModel by lazy { ViewModelProvider(this)[UserViewModel::class.java] }
     private lateinit var mBinding: ActivityMainBinding
     private var currentUserDomain: UserDomain? = null
-    private val chatRoomsListFragment = ChatRoomsListFragment()
+    private val userListFragment = UserListFragment()
     private val mypageFragment = MypageFragment()
     private val mainPagerAdapter = MainPagerAdapter(this)
 
     private val mainTabItemList = listOf(
-        MainTabItem(chatRoomsListFragment, "채팅 목록", R.drawable.ic_baseline_chat_bubble_24),
+        MainTabItem(userListFragment, "채팅 목록", R.drawable.ic_baseline_chat_bubble_24),
         MainTabItem(mypageFragment, "마이페이지", R.drawable.ic_baseline_person_24)
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        viewModel.setCurrentUserId(intent.getStringExtra(CURRENT_USER)!!)
+        viewModel.setCurrentUserIdAndFetchChatroomList(intent.getStringExtra(CURRENT_USER)!!)
+        viewModel.fetchAllUsersList()
 
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
 
@@ -70,7 +76,12 @@ class MainActivity : FragmentActivity() {
             }
 
             if (it != null) currentUserDomain = it
+            lifecycleScope.launch { mBinding.viewModel!!.getChatRoom(currentUserDomain!!.uid) }
         }
+
+        mBinding.viewModel!!.getCurrentUserInformation()
+        mBinding.viewModel!!.fetchUserListFromExternalDB()
+
         mBinding.viewpager2Main.adapter = mainPagerAdapter
 
         TabLayoutMediator(mBinding.tablayoutMainTablayout, mBinding.viewpager2Main, TabLayoutMediator.TabConfigurationStrategy { tab, position ->
@@ -90,7 +101,7 @@ class MainActivity : FragmentActivity() {
                 viewModel.signOut()
                 viewModel.cancelAutoLogin()
                 finish()
-                val intent = Intent(this, LogInActivity::class.java).apply {
+                val intent = Intent(this, SignInActivity::class.java).apply {
                     putExtra("AutoLogin", false)
                 }
                 startActivity(intent)

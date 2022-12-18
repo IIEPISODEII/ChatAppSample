@@ -170,17 +170,17 @@ class ChatRepositoryImpl @Inject constructor(
             }
     }
 
-    override suspend fun takeLastMessageOfChatRoom(chatRoom: String): Flow<MessageDomain?> {
+    override suspend fun fetchLastMessageOfChatRoom(chatRoom: String): Flow<MessageDomain?> {
         return roomDB.getMessageDao().fetchLastReceivedMessages(chatRoom)
             .map { messageData ->
                 messageData?.toDomain()
             }
     }
 
-    override suspend fun fetchChatRoomFromDB(chatRoomId: String): Flow<List<ChatRoomDomain.ReaderLog>> {
+    override suspend fun fetchChatRoomFromDB(chatRoomId: String): Flow<List<ChatRoomDomain.ReaderLogDomain>> {
         return roomDB.getChatRoomDao().fetchReaderLogs(targetChatRoom = chatRoomId).map { list ->
             list.map {
-                ChatRoomDomain.ReaderLog(it.participantsId, it.participationTime)
+                ChatRoomDomain.ReaderLogDomain(it.participantsId, it.participationTime)
             }
         }
     }

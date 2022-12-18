@@ -9,7 +9,8 @@ data class UserData(
     var name: String = "",
     @PrimaryKey val uid: String = "",
     var profileImage: String = "",
-    var email: String = ""
+    var email: String = "",
+    var lastTimeStamp: String = ""
 ) {
-    fun toDomain() = UserDomain(name, email, uid, profileImage)
+    fun toDomain() = UserDomain(name, email, uid, profileImage, lastTimeStamp)
 }

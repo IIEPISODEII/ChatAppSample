@@ -36,7 +36,6 @@ class MypageFragment : Fragment() {
         mBinding.viewModel = viewModel
 
         viewModel.currentUserDomain.observe(this.viewLifecycleOwner) {
-            println("USER PROFILE: ${it?.profileImage}")
             if (it != null && myProfile?.profileImage != it.profileImage) {
                 Glide
                     .with(requireContext())
@@ -93,7 +92,7 @@ class MypageFragment : Fragment() {
         mBinding.btnMyPageLogout.setOnClickListener {
             viewModel.cancelAutoLogin()
             viewModel.signOut()
-            startActivity(Intent(requireActivity(), LogInActivity::class.java))
+            startActivity(Intent(requireActivity(), SignInActivity::class.java))
             requireActivity().finish()
         }
 

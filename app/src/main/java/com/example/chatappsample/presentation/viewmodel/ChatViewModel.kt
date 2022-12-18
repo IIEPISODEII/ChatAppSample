@@ -47,8 +47,8 @@ class ChatViewModel @Inject constructor(
     private val newlyMessageDomainList = mutableListOf<MessageDomain>()
     private val preMessageDomainList = mutableListOf<MessageDomain>()
 
-    private val _readerLogs = MutableLiveData<List<ChatRoomDomain.ReaderLog>>()
-    val readerLogs: LiveData<List<ChatRoomDomain.ReaderLog>>
+    private val _readerLogs = MutableLiveData<List<ChatRoomDomain.ReaderLogDomain>>()
+    val readerLogs: LiveData<List<ChatRoomDomain.ReaderLogDomain>>
         get() = _readerLogs
 
     init {

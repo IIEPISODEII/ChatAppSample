@@ -6,6 +6,6 @@ import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 class FetchReaderLogAsFlowUsecase @Inject constructor(private val repo: ChatRepository) {
-    suspend operator fun invoke(chatRoomId: String): Flow<List<ChatRoomDomain.ReaderLog>>
+    suspend operator fun invoke(chatRoomId: String): Flow<List<ChatRoomDomain.ReaderLogDomain>>
         = repo.fetchChatRoomFromDB(chatRoomId)
 }

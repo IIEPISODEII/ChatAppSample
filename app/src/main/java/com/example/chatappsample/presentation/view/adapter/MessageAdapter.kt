@@ -32,7 +32,7 @@ class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: 
 
     private val imageList: MutableList<ByteArray?> = mutableListOf()
     private var profileByteArray: ByteArray? = null
-    private val readersLog = mutableListOf<ChatRoomDomain.ReaderLog>()
+    private val readersLog = mutableListOf<ChatRoomDomain.ReaderLogDomain>()
 
     inner class MyMessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val myDateTextView: MaterialTextView = itemView.findViewById(R.id.tv_current_date_presentation_in_my_message_viewholder)
@@ -52,7 +52,7 @@ class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: 
             myMessageTextView.text = messageDomain.message
             myTimeTextView.text = convertSimpleDateFormatToTime(messageDomain.sentTime)[1]
 
-            val leftsToRead = readersLog.count { it.time.isEmpty() || it.time < messageDomain.sentTime }
+            val leftsToRead = readersLog.count { it.readTime.isEmpty() || it.readTime < messageDomain.sentTime }
             if (leftsToRead == 0) {
                 myReadersTextView.visibility = View.INVISIBLE
             } else {
@@ -81,7 +81,7 @@ class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: 
             othersMessageTextView.text = messageDomain.message
             othersTimeTextView.text = convertSimpleDateFormatToTime(messageDomain.sentTime)[1]
 
-            val leftsToRead = readersLog.count { it.time.isEmpty() || it.time < messageDomain.sentTime }
+            val leftsToRead = readersLog.count { it.readTime.isEmpty() || it.readTime < messageDomain.sentTime }
             if (leftsToRead == 0) {
                 othersReadersTextView.visibility = View.INVISIBLE
             } else {
@@ -119,7 +119,7 @@ class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: 
                 .into(myImageView)
             myTimeTextView.text = convertSimpleDateFormatToTime(messageDomain.sentTime)[1]
 
-            val leftsToRead = readersLog.count { it.time.isEmpty() || it.time < messageDomain.sentTime }
+            val leftsToRead = readersLog.count { it.readTime.isEmpty() || it.readTime < messageDomain.sentTime }
             if (leftsToRead == 0) {
                 myReadersTextView.visibility = View.INVISIBLE
             } else {
@@ -154,7 +154,7 @@ class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: 
                 .into(othersImageView)
             othersTimeTextView.text = convertSimpleDateFormatToTime(messageDomain.sentTime)[1]
 
-            val leftsToRead = readersLog.count { it.time.isEmpty() || it.time < messageDomain.sentTime }
+            val leftsToRead = readersLog.count { it.readTime.isEmpty() || it.readTime < messageDomain.sentTime }
             if (leftsToRead == 0) {
                 othersReadersTextView.visibility = View.INVISIBLE
             } else {
@@ -278,10 +278,9 @@ class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: 
         notifyDataSetChanged()
     }
 
-    fun setReaderLog(list: List<ChatRoomDomain.ReaderLog>) {
+    fun setReaderLog(list: List<ChatRoomDomain.ReaderLogDomain>) {
         this.readersLog.clear()
         this.readersLog.addAll(list)
-        println("ReadersLog in MessageAdapter: $readersLog")
         notifyDataSetChanged()
     }
 

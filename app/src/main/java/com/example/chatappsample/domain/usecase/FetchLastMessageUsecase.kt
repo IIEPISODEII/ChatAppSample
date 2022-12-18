@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class FetchLastMessageUsecase @Inject constructor(private val repo: ChatRepository) {
-    suspend operator fun invoke(chatRoom: String): Flow<MessageDomain?> = repo.takeLastMessageOfChatRoom(chatRoom).map {
+    suspend operator fun invoke(chatRoom: String): Flow<MessageDomain?> = repo.fetchLastMessageOfChatRoom(chatRoom).map {
         it
     }
 }

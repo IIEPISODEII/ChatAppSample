@@ -5,10 +5,10 @@ import com.example.chatappsample.domain.repository.UserRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
-class GetAllUsersFromRoomDBUsecase @Inject constructor(private val userRepository: UserRepository) {
+class FetchUserListFromRoomDBUsecase @Inject constructor(private val userRepository: UserRepository) {
 
     suspend operator fun invoke(): Flow<List<UserDomain>> {
-        return userRepository.getAllUsersFromRoomDB()
+        return userRepository.fetchUserListFromRoomDB()
     }
 
 }

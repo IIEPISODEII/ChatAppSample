@@ -1,12 +1,16 @@
 package com.example.chatappsample.data.entity
 
 import androidx.room.Entity
+import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
 import com.example.chatappsample.domain.dto.MessageDomain
 
-@Entity(tableName="messages")
+@Entity(
+    tableName = "messages",
+    primaryKeys = ["messageId"]
+)
 data class MessageData(
-    @PrimaryKey var messageId: String = "",
+    var messageId: String = "",
     var chatRoom: String = "",
     var type: Int = 0,
     var senderId: String = "",

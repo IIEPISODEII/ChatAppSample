@@ -6,7 +6,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.chatappsample.domain.`interface`.*
-import com.example.chatappsample.domain.dto.MessageDomain
+import com.example.chatappsample.domain.dto.ChatRoomDomain
 import com.example.chatappsample.domain.dto.UserDomain
 import com.example.chatappsample.domain.usecase.*
 import com.google.firebase.database.DataSnapshot
@@ -19,35 +19,55 @@ import javax.inject.Inject
 
 @HiltViewModel
 class UserViewModel @Inject constructor(
-    private val getCurrentUserUsecase: GetCurrentUserUsecase,
-    private val receiveAllUsersFromExternalDBUsecase: ReceiveAllUsersFromExternalDBUsecase,
-    private val getAllUsersUsecase: GetAllUsersFromRoomDBUsecase,
+    private val fetchCurrentUserUsecase: FetchCurrentUserUsecase,
+    private val fetchUserListFromExternalDBUsecase: FetchUserListFromExternalDBUsecase,
+    private val fetchUserListUsecase: FetchUserListFromRoomDBUsecase,
+    private val fetchChatRoomListUsecase: FetchChatRoomListUsecase,
+    private val signUpUsecase: SignUpUsecase,
+    private val signInUsecase: SignInUsecase,
     private val signOutUsecase: SignOutUsecase,
     private val sendEmailVerificationUsecase: SendEmailVerificationUsecase,
-    private val emailVerificationUsecase: SignUpWithVerifiedEmailUsecase,
     private val setAutoLoginCheckUsecase: SetAutoLoginCheckUsecase,
+    private val getAutoLoginCheckUsecase: GetAutoLoginCheckUsecase,
     private val updateCurrentUserUsecase: UpdateCurrentUserUsercase,
     private val downloadProfileImageUsecase: DownloadProfileImageUsecase,
-    private val takeLastMessageUsecase: FetchLastMessageUsecase,
+    private val fetchLastMessageUsecase: FetchLastMessageUsecase,
     private val updateChatRoomUsecase: UpdateChatRoomUsecase
 ) : ViewModel() {
 
     private var currentUserId: String = ""
-    fun setCurrentUserId(id: String) {
+    private val _chatRoomList = MutableLiveData<List<ChatRoomDomain>>()
+    val chatRoomList: LiveData<List<ChatRoomDomain>>
+        get() = _chatRoomList
+    fun setCurrentUserIdAndFetchChatroomList(id: String) {
         currentUserId = id
         viewModelScope.launch {
-            getAllUsers().collect {
-                _allUsersList.postValue(it)
+            fetchChatRoomListUsecase(currentUserId).collect {
+                _chatRoomList.postValue(it)
             }
         }
     }
+
+    fun fetchAllUsersList() {
+        viewModelScope.launch {
+            fetchAllUsers().collect {
+                _userList.postValue(it)
+            }
+        }
+    }
+
+    private var currentUserEmail = ""
+    private var currentUserPassword = ""
+
+    fun getCurrentEmail() = currentUserEmail
+    fun getCurrentPassword() = currentUserPassword
 
     private val _currentUserDomain = MutableLiveData<UserDomain?>()
     val currentUserDomain: LiveData<UserDomain?>
         get() = _currentUserDomain
 
     fun getCurrentUserInformation() {
-        getCurrentUserUsecase.getCurrentUser(object : OnGetDataListener {
+        fetchCurrentUserUsecase(object : OnGetDataListener {
             override fun onSuccess(dataSnapshot: DataSnapshot) {
                 val userDomain =
                     dataSnapshot.getValue(UserDomain::class.java) ?: UserDomain()
@@ -63,15 +83,19 @@ class UserViewModel @Inject constructor(
         })
     }
 
-    private val _allUsersList = MutableLiveData<List<UserDomain>>()
-    val allUsersList: LiveData<List<UserDomain>>
-        get() = _allUsersList
+    private val _userList = MutableLiveData<List<UserDomain>>()
+    val userList: LiveData<List<UserDomain>>
+        get() = _userList
 
-    private suspend fun getAllUsers(): Flow<List<UserDomain>> {
-        return getAllUsersUsecase().map { list -> list.filter { user -> user.uid != currentUserId } }
+    private suspend fun fetchAllUsers(): Flow<List<UserDomain>> {
+        return fetchUserListUsecase().map { list -> list.filter { user -> user.uid != currentUserId } }
     }
 
-    fun receiveAllUsersFromExternalDB() = receiveAllUsersFromExternalDBUsecase(viewModelScope)
+    fun fetchUserListFromExternalDB() = fetchUserListFromExternalDBUsecase(viewModelScope)
+
+    fun signIn(email: String, password: String, listener: OnSignInListener) {
+        signInUsecase(email, password, listener)
+    }
 
     fun signOut() {
         if (signOutUsecase.signOut()) _currentUserDomain.value = null
@@ -79,14 +103,20 @@ class UserViewModel @Inject constructor(
 
     fun sendVerificationEmail(email: String, password: String, listener: OnSendEmailVerificationListener) {
         sendEmailVerificationUsecase(email, password, listener)
+        currentUserEmail = email
+        currentUserPassword = password
     }
 
     fun signUp(name: String, listener: OnEmailVerificationListener) {
-        emailVerificationUsecase(name, listener)
+        signUpUsecase(name, listener)
     }
 
     fun cancelAutoLogin() {
         setAutoLoginCheckUsecase(false)
+    }
+
+    fun getAutoLoginCheck(): Boolean {
+        return getAutoLoginCheckUsecase()
     }
 
     fun updateCurrentUser(userDomain: UserDomain, changeProfileImage: Boolean) {
@@ -105,16 +135,22 @@ class UserViewModel @Inject constructor(
         _isProfileEditMode.postValue(mode)
     }
 
-    suspend fun takeLastMessage(userDomain: UserDomain): Flow<MessageDomain?> {
-        return try {
-            takeLastMessageUsecase(currentUserDomain.value!!.uid + userDomain.uid)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            flow {
-                emit(null)
-            }
-        }
-    }
+//    suspend fun takeLastMessage(): Flow<MessageDomain?> {
+//        viewModelScope.launch {
+//
+//            getChatRoomIdsByParticipantsId(currentUserId, allUsersList.value?.map { it.uid } ?: listOf())
+//
+//        }
+//
+//        return try {
+//            takeLastMessageUsecase(currentUserDomain.value!!.uid + userDomain.uid)
+//        } catch (e: Exception) {
+//            e.printStackTrace()
+//            flow {
+//                emit(null)
+//            }
+//        }
+//    }
 
     fun updateChatRoom(myId: String, yourId: String, time: String, onSuccess: (String) -> Unit, onFail: () -> Unit, enter: Boolean) {
         updateChatRoomUsecase(myId, yourId, time, onSuccess, onFail, enter, viewModelScope)

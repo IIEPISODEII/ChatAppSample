@@ -1,9 +1,6 @@
 package com.example.chatappsample.data.dao
 
-import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
+import androidx.room.*
 import com.example.chatappsample.data.entity.ChatRoomData
 import kotlinx.coroutines.flow.Flow
 
@@ -14,4 +11,10 @@ interface ChatRoomDataDao {
 
     @Query("SELECT * FROM chatrooms WHERE chatRoomId = :targetChatRoom")
     fun fetchReaderLogs(targetChatRoom: String): Flow<List<ChatRoomData>>
+
+    @Delete
+    fun deleteChatRoom(chatRoom: ChatRoomData)
+
+    @Query("SELECT * FROM chatrooms WHERE currentAccountId = :currentUserId")
+    fun getChatRoomList(currentUserId: String): Flow<List<ChatRoomData>>
 }
