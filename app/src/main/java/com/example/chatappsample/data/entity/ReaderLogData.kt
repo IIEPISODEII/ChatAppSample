@@ -1,13 +1,22 @@
 package com.example.chatappsample.data.entity
 
-import androidx.room.Embedded
 import androidx.room.Entity
-import androidx.room.PrimaryKey
-import com.example.chatappsample.domain.dto.MessageDomain
+import androidx.room.ForeignKey
+import androidx.room.ForeignKey.CASCADE
 
-@Entity(tableName="readerlog", primaryKeys =["chatroomId", "userId"])
+@Entity(
+    tableName = "readerlog",
+    primaryKeys = ["chatroomId", "userId"],
+    foreignKeys = [ForeignKey(
+        entity = ChatroomData::class,
+        parentColumns = ["chatroomId", "currentAccountId"],
+        childColumns = ["chatroomId", "currentAccountId"],
+        onDelete = CASCADE
+    )]
+)
 data class ReaderLogData(
     var chatroomId: String = "",
+    var currentAccountId: String = "",
     var userId: String = "",
     var readTime: String = ""
 )

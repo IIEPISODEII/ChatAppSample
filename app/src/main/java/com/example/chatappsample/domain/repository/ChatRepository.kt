@@ -2,7 +2,6 @@ package com.example.chatappsample.domain.repository
 
 import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
 import com.example.chatappsample.domain.`interface`.OnFirebaseCommunicationListener
-import com.example.chatappsample.domain.dto.ChatRoomDomain
 import com.example.chatappsample.domain.dto.MessageDomain
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -45,8 +44,4 @@ interface ChatRepository {
         message: MessageDomain,
         onFileDownloadListener: OnFileDownloadListener
     )
-
-    suspend fun fetchChatRoomFromDB(
-        chatRoomId: String
-    ): Flow<List<ChatRoomDomain.ReaderLogDomain>>
 }

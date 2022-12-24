@@ -10,7 +10,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.MultiTransformation
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.example.chatappsample.R
-import com.example.chatappsample.domain.dto.ChatRoomDomain
+import com.example.chatappsample.domain.dto.ChatroomDomain
 import com.example.chatappsample.domain.dto.MessageDomain
 import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.textview.MaterialTextView
@@ -32,7 +32,7 @@ class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: 
 
     private val imageList: MutableList<ByteArray?> = mutableListOf()
     private var profileByteArray: ByteArray? = null
-    private val readersLog = mutableListOf<ChatRoomDomain.ReaderLogDomain>()
+    private val readersLog = mutableListOf<ChatroomDomain.ReaderLogDomain>()
 
     inner class MyMessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val myDateTextView: MaterialTextView = itemView.findViewById(R.id.tv_current_date_presentation_in_my_message_viewholder)
@@ -278,7 +278,7 @@ class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: 
         notifyDataSetChanged()
     }
 
-    fun setReaderLog(list: List<ChatRoomDomain.ReaderLogDomain>) {
+    fun setReaderLog(list: List<ChatroomDomain.ReaderLogDomain>) {
         this.readersLog.clear()
         this.readersLog.addAll(list)
         notifyDataSetChanged()

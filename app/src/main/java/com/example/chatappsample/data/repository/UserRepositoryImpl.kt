@@ -1,17 +1,9 @@
 package com.example.chatappsample.data.repository
 
 import android.net.Uri
-import android.os.Build
 import android.util.Log
-import androidx.work.OneTimeWorkRequest
-import androidx.work.WorkManager
-import com.example.chatappsample.data.entity.ChatRoomData
-import com.example.chatappsample.data.entity.ReaderLogData
 import com.example.chatappsample.data.entity.UserData
-import com.example.chatappsample.data.repository.ChatRepositoryImpl.Companion.FIREBASE_FIRST_CHILD_CHATS
-import com.example.chatappsample.data.repository.worker.UpdateChatroomWorker
 import com.example.chatappsample.domain.`interface`.*
-import com.example.chatappsample.domain.dto.ChatRoomDomain
 import com.example.chatappsample.domain.dto.UserDomain
 import com.example.chatappsample.domain.repository.UserRepository
 import com.example.chatappsample.util.TEN_MEGABYTE
@@ -22,18 +14,15 @@ import com.google.firebase.storage.ktx.storageMetadata
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.forEach
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import java.util.*
 import javax.inject.Inject
 
 class UserRepositoryImpl @Inject constructor(
     firebaseDatabase: FirebaseDatabase,
     private val firebaseAuth: FirebaseAuth,
     private val firebaseStorage: FirebaseStorage,
-    private val roomDB: AppDatabase,
-    private val workManager: WorkManager
+    private val roomDB: AppDatabase
 ) : UserRepository {
 
     private val db = firebaseDatabase.reference
@@ -85,7 +74,7 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun fetchUserListFromRoomDB(): Flow<List<UserDomain>> {
         return roomDB
             .getUserDao()
-            .getAllUserList()
+            .fetchUserList()
             .map { list ->
                 list.map { userData -> userData.toDomain() }
             }
@@ -143,7 +132,6 @@ class UserRepositoryImpl @Inject constructor(
         currentUser.reload().addOnCompleteListener {
             if (reloadCnt > 3) return@addOnCompleteListener
             if (!it.isSuccessful) signUp(name, listener)
-            println("currentUser: ${currentUser.uid}, ${currentUser.email}, ${currentUser.isEmailVerified}")
 
             if (currentUser.isEmailVerified) {
                 val userDomain = UserDomain(name, currentUser.email!!, currentUser.uid, "")
@@ -220,7 +208,6 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-
     override fun downloadProfileImage(
         userID: String,
         onFileDownloadListener: OnFileDownloadListener
@@ -237,136 +224,13 @@ class UserRepositoryImpl @Inject constructor(
             }
     }
 
-    override fun updateChatRoomState(
-        myId: String,
-        yourId: String,
-        time: String,
-        onSuccess: (String) -> (Unit),
-        onFail: () -> (Unit),
-        enter: Boolean,
-        coroutineScope: CoroutineScope
-    ) {
-        val randomChatRoomId = time + UUID.randomUUID()
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            db
-                .child(FIREBASE_FIRST_CHILD_USERS)
-                .child(myId)
-                .child(FIREBASE_SECOND_CHILD_CHATROOMS)
-                .child(yourId)
-                .addValueEventListener(object : ValueEventListener {
-                    override fun onDataChange(snapshot: DataSnapshot) {
-                        if (!snapshot.exists()) {
-                            db
-                                .child(FIREBASE_FIRST_CHILD_USERS)
-                                .child(myId)
-                                .child(FIREBASE_SECOND_CHILD_CHATROOMS)
-                                .updateChildren(mapOf(Pair(yourId, randomChatRoomId)))
-                                .addOnSuccessListener {
-                                    db
-                                        .child(FIREBASE_FIRST_CHILD_USERS)
-                                        .child(yourId)
-                                        .child(FIREBASE_SECOND_CHILD_CHATROOMS)
-                                        .updateChildren(mapOf(Pair(myId, randomChatRoomId)))
-                                    db
-                                        .child(FIREBASE_FIRST_CHILD_CHATS)
-                                        .child(randomChatRoomId)
-                                        .child(FIREBASE_SECOND_CHILD_READ_LOG)
-                                        .updateChildren(
-                                            mapOf(
-                                                Pair(myId, time),
-                                                Pair(yourId, "")
-                                            )
-                                        )
-
-                                    val pWorker = object : UpdateChatroomWorker.Work {
-                                        override fun doWork() {
-                                            val myChatRoomData = ChatRoomData(myId, randomChatRoomId, ReaderLogData(randomChatRoomId, myId, "9"))
-                                            val yourChatRoomData = ChatRoomData(yourId, randomChatRoomId, ReaderLogData(randomChatRoomId, yourId, ""))
-
-                                            roomDB.getChatRoomDao().insertChatRoom(myChatRoomData)
-                                            roomDB.getChatRoomDao().insertChatRoom(yourChatRoomData)
-                                        }
-                                    }
-                                    UpdateChatroomWorker.setWork(pWorker)
-                                    val updateChatroomWorker = OneTimeWorkRequest
-                                        .Builder(UpdateChatroomWorker::class.java)
-                                        .build()
-
-                                    workManager
-                                        .beginWith(updateChatroomWorker)
-                                        .enqueue()
-
-                                    onSuccess(randomChatRoomId)
-                                }
-                        } else {
-                            val currentChatRoomId = snapshot.value.toString()
-                            val insertTime = if (enter) "9" else time
-
-                            db
-                                .child(FIREBASE_FIRST_CHILD_CHATS)
-                                .child(currentChatRoomId)
-                                .child(FIREBASE_SECOND_CHILD_READ_LOG)
-                                .updateChildren(mapOf(Pair(myId, insertTime)))
-                                .addOnSuccessListener {
-
-                                    val pWorker = object : UpdateChatroomWorker.Work {
-                                        override fun doWork() {
-                                            val myChatRoomData = ChatRoomData(myId, currentChatRoomId, ReaderLogData(currentChatRoomId, myId, insertTime))
-                                            roomDB.getChatRoomDao().insertChatRoom(myChatRoomData)
-                                        }
-                                    }
-
-                                    UpdateChatroomWorker.setWork(pWorker)
-                                    val updateChatroomWorker = OneTimeWorkRequest
-                                        .Builder(UpdateChatroomWorker::class.java)
-                                        .build()
-
-                                    workManager
-                                        .beginWith(updateChatroomWorker)
-                                        .enqueue()
-
-                                    onSuccess(currentChatRoomId)
-                                }
-                        }
-                    }
-
-                    override fun onCancelled(error: DatabaseError) {
-                        onFail()
-                    }
-
-                })
-
-
-        } else {
-            Log.d("UserRepoImpl", "데이터 동기화 실패 - 원인: API Level 미달")
-        }
-    }
-
-    override suspend fun fetchChatRoomList(
-        currentUserId: String
-    ): Flow<List<ChatRoomDomain>> {
-        val chatRoomDataList = roomDB.getChatRoomDao().getChatRoomList(currentUserId)
-
-        return chatRoomDataList.map { chatRoomList ->
-            val chatRoomDomainList = mutableListOf<ChatRoomDomain>()
-            chatRoomList.forEach { chatRoomData ->
-                val readerLogItem = ChatRoomDomain.ReaderLogDomain(
-                    chatRoomData.readerLog.userId,
-                    chatRoomData.readerLog.readTime
-                )
-
-                val chatRoomDomain = ChatRoomDomain(chatRoomData.chatRoomId, listOf(readerLogItem))
-                chatRoomDomainList.add(chatRoomDomain)
-            }
-            chatRoomDomainList
-        }
+    override suspend fun fetchUserById(uid: String): UserDomain {
+        val userData = roomDB.getUserDao().fetchUserById(uid)
+        return UserDomain(name = userData.name, email = userData.email, uid = userData.uid, profileImage = userData.profileImage, lastTimeStamp = userData.lastTimeStamp)
     }
 
     companion object {
         const val FIREBASE_FIRST_CHILD_USERS = "user"
         const val FIREBASE_FIRST_CHILD_PROFILEIMAGES = "profileImages/"
-        const val FIREBASE_SECOND_CHILD_READ_LOG = "readLog"
-        const val FIREBASE_SECOND_CHILD_CHATROOMS = "chatrooms"
     }
 }

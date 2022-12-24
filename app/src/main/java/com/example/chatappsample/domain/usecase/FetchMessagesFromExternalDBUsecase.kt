@@ -4,7 +4,7 @@ import com.example.chatappsample.domain.repository.ChatRepository
 import kotlinx.coroutines.CoroutineScope
 import javax.inject.Inject
 
-class ReceiveMessagesFromExternalDBUsecase @Inject constructor(private val repo: ChatRepository) {
+class FetchMessagesFromExternalDBUsecase @Inject constructor(private val repo: ChatRepository) {
 
     suspend operator fun invoke(chatRoom: String, coroutineScope: CoroutineScope) {
         repo.fetchMessagesFromExternalDB(chatRoom, coroutineScope)

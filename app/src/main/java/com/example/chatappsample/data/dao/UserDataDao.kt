@@ -13,5 +13,8 @@ interface UserDataDao {
     fun deleteUser(userEntity: UserData)
 
     @Query("SELECT * FROM users")
-    fun getAllUserList(): Flow<List<UserData>>
+    fun fetchUserList(): Flow<List<UserData>>
+
+    @Query("SELECT * FROM users WHERE uid = :userId")
+    fun fetchUserById(userId: String): UserData
 }

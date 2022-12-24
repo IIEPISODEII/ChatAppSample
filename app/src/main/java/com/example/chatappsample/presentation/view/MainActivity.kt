@@ -9,8 +9,10 @@ import androidx.appcompat.content.res.AppCompatResources
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.bumptech.glide.Glide
 import com.example.chatappsample.R
@@ -22,6 +24,7 @@ import com.example.chatappsample.presentation.viewmodel.UserViewModel
 import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -35,17 +38,23 @@ class MainActivity : FragmentActivity() {
     private lateinit var mBinding: ActivityMainBinding
     private var currentUserDomain: UserDomain? = null
     private val userListFragment = UserListFragment()
+    private val chatroomListFragment = ChatroomListFragment()
     private val mypageFragment = MypageFragment()
     private val mainPagerAdapter = MainPagerAdapter(this)
 
     private val mainTabItemList = listOf(
-        MainTabItem(userListFragment, "채팅 목록", R.drawable.ic_baseline_chat_bubble_24),
+        MainTabItem(userListFragment, "유저 목록", R.drawable.ic_baseline_people_24),
+        MainTabItem(chatroomListFragment, "채팅 목록", R.drawable.ic_baseline_chat_bubble_24),
         MainTabItem(mypageFragment, "마이페이지", R.drawable.ic_baseline_person_24)
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        viewModel.setCurrentUserIdAndFetchChatroomList(intent.getStringExtra(CURRENT_USER)!!)
+        lifecycleScope.launch(Dispatchers.IO) {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.setCurrentUserIdAndFetchChatroomList(intent.getStringExtra(CURRENT_USER)!!, this)
+            }
+        }
         viewModel.fetchAllUsersList()
 
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
@@ -76,10 +85,9 @@ class MainActivity : FragmentActivity() {
             }
 
             if (it != null) currentUserDomain = it
-            lifecycleScope.launch { mBinding.viewModel!!.getChatRoom(currentUserDomain!!.uid) }
         }
 
-        mBinding.viewModel!!.getCurrentUserInformation()
+        mBinding.viewModel!!.fetchCurrentUserInformation()
         mBinding.viewModel!!.fetchUserListFromExternalDB()
 
         mBinding.viewpager2Main.adapter = mainPagerAdapter

@@ -9,7 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
 import com.example.chatappsample.domain.`interface`.OnFirebaseCommunicationListener
-import com.example.chatappsample.domain.dto.ChatRoomDomain
+import com.example.chatappsample.domain.dto.ChatroomDomain
 import com.example.chatappsample.domain.dto.MessageDomain
 import com.example.chatappsample.domain.usecase.*
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,14 +20,13 @@ import javax.inject.Inject
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     private val sendMessageUsecase: SendMessageUsecase,
-    private val fetchMessagesFromExternalDBUsecase: ReceiveMessagesFromExternalDBUsecase,
+    private val fetchMessagesFromExternalDBUsecase: FetchMessagesFromExternalDBUsecase,
     private val fetchMessageFromRoomDBUsecase: FetchMessagesFromRoomDBUsecase,
     private val fetchLastMessageUsecase: FetchLastMessageUsecase,
     private val uploadFileUsecase: UploadFileUsecase,
     private val downloadFileUsecase: DownloadFileUsecase,
     private val downloadProfileImageUsecase: DownloadProfileImageUsecase,
-    private val fetchReaderLogAsFlowUsecase: FetchReaderLogAsFlowUsecase,
-    private val updateChatRoomUsecase: UpdateChatRoomUsecase
+    private val updateChatRoomUsecase: UpdateChatroomUsecase
 ) : ViewModel(), Observable {
 
     companion object {
@@ -47,8 +46,8 @@ class ChatViewModel @Inject constructor(
     private val newlyMessageDomainList = mutableListOf<MessageDomain>()
     private val preMessageDomainList = mutableListOf<MessageDomain>()
 
-    private val _readerLogs = MutableLiveData<List<ChatRoomDomain.ReaderLogDomain>>()
-    val readerLogs: LiveData<List<ChatRoomDomain.ReaderLogDomain>>
+    private val _readerLogs = MutableLiveData<List<ChatroomDomain.ReaderLogDomain>>()
+    val readerLogs: LiveData<List<ChatroomDomain.ReaderLogDomain>>
         get() = _readerLogs
 
     init {
@@ -56,9 +55,6 @@ class ChatViewModel @Inject constructor(
             fetchMessagesFromExternalDB(chatRoomId)
             fetchMessagesFromRoomDB(chatRoomId)
             fetchLastMessageFromRoomDB(chatRoomId)
-        }
-        viewModelScope.launch(Dispatchers.IO) {
-            fetchReaderLogsFromRoomDB(chatRoomId)
         }
     }
 
@@ -140,12 +136,6 @@ class ChatViewModel @Inject constructor(
 
     fun downloadProfileImage(userID: String, onFileDownloadListener: OnFileDownloadListener) {
         downloadProfileImageUsecase(userID, onFileDownloadListener)
-    }
-
-    private suspend fun fetchReaderLogsFromRoomDB(chatRoomId: String) {
-        fetchReaderLogAsFlowUsecase(chatRoomId).stateIn(viewModelScope).collect {
-            _readerLogs.postValue(it)
-        }
     }
 
     fun updateChatRoom(myId: String, yourId: String, time: String, onSuccess: (String) -> Unit, onFail: () -> Unit, enter: Boolean, coroutineScope: CoroutineScope = viewModelScope) {

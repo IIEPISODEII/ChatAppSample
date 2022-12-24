@@ -1,7 +1,6 @@
 package com.example.chatappsample.domain.repository
 
 import com.example.chatappsample.domain.`interface`.*
-import com.example.chatappsample.domain.dto.ChatRoomDomain
 import com.example.chatappsample.domain.dto.UserDomain
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -67,28 +66,5 @@ interface UserRepository {
         onFileDownloadListener: OnFileDownloadListener
     )
 
-    /**
-     * 채팅방 상태 업데이트
-     *
-     * @param myId 내 아이디
-     * @param yourId 상대방 아이디
-     * @param time 내 접속 시간
-     * @param onSuccess 채팅방 업데이트 성공 시 콜백
-     * @param onFail 채팅방 업데이트 실패 시 콜백
-     * @param enter true: 채팅방 들어오기, false: 채팅방 나가기
-     * @param coroutineScope 코루틴스코프 설정
-     */
-    fun updateChatRoomState(
-        myId: String,
-        yourId: String,
-        time: String,
-        onSuccess: (String) -> Unit,
-        onFail: () -> Unit,
-        enter: Boolean,
-        coroutineScope: CoroutineScope
-    )
-
-    suspend fun fetchChatRoomList(
-        currentUserId: String
-    ): Flow<List<ChatRoomDomain>>
+    suspend fun fetchUserById(uid: String): UserDomain
 }

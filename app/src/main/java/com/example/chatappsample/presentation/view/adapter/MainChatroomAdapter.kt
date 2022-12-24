@@ -4,21 +4,19 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
 import com.example.chatappsample.R
-import com.example.chatappsample.domain.dto.ChatRoomDomain
+import com.example.chatappsample.domain.dto.ChatroomDomain
 import com.example.chatappsample.domain.dto.MessageDomain
-import com.example.chatappsample.domain.dto.UserDomain
-import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.textview.MaterialTextView
 
-class MainChatroomAdapter(var currentUserId: String, var chatroomDomainList: ArrayList<ChatRoomDomain>): RecyclerView.Adapter<MainChatroomAdapter.CustomViewHolder>() {
+class MainChatroomAdapter(var currentUserId: String, var chatroomDomainList: ArrayList<ChatroomDomain>): RecyclerView.Adapter<MainChatroomAdapter.CustomViewHolder>() {
 
-    private val lastMessageDomainList: MutableMap<String, MessageDomain> = mutableMapOf()
+    private val lastMessageDomainList: MutableMap<String, MessageDomain?> = mutableMapOf()
 
     inner class CustomViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val userLastMessage: MaterialTextView = itemView.findViewById(R.id.tv_last_chatting)
-        val userLastMessageTime: MaterialTextView = itemView.findViewById(R.id.tv_last_chatting_sent_time)
+        val chatroomName: MaterialTextView = itemView.findViewById(R.id.tv_main_chatroom_name)
+        val userLastMessage: MaterialTextView = itemView.findViewById(R.id.tv_main_chatroom_last_chatting)
+        val userLastMessageTime: MaterialTextView = itemView.findViewById(R.id.tv_main_chatroom_last_chatting_sent_time)
 
         init {
             itemView.setOnClickListener { view ->
@@ -34,16 +32,17 @@ class MainChatroomAdapter(var currentUserId: String, var chatroomDomainList: Arr
 
     override fun onBindViewHolder(holder: CustomViewHolder, position: Int) {
         val selectedChatroom = chatroomDomainList[position]
-        val lastMessage = lastMessageDomainList[selectedChatroom.chatRoomId]
+        val lastMessage = lastMessageDomainList[selectedChatroom.chatroomId]
 
+        holder.chatroomName.text = selectedChatroom.chatroomName
         holder.userLastMessage.text = lastMessage?.message?.ifEmpty { "사진" } ?: ""
         holder.userLastMessageTime.text = lastMessage?.sentTime ?: ""
     }
 
     override fun getItemCount(): Int = chatroomDomainList.size
 
-    fun addLastMessageToList(chatRoomDomain: ChatRoomDomain, messageDomain: MessageDomain) {
-        lastMessageDomainList[chatRoomDomain.chatRoomId] = messageDomain
+    fun addLastMessageToList(chatRoomDomain: ChatroomDomain, messageDomain: MessageDomain?) {
+        lastMessageDomainList[chatRoomDomain.chatroomId] = messageDomain
     }
 
     private var onChatRoomClickListener: ChatRoomClickListener? = null

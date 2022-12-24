@@ -5,16 +5,20 @@ import android.util.Log
 import com.example.chatappsample.data.entity.MessageData
 import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
 import com.example.chatappsample.domain.`interface`.OnFirebaseCommunicationListener
-import com.example.chatappsample.domain.dto.ChatRoomDomain
 import com.example.chatappsample.domain.dto.MessageDomain
 import com.example.chatappsample.domain.repository.ChatRepository
 import com.example.chatappsample.util.TEN_MEGABYTE
-import com.google.firebase.database.*
+import com.google.firebase.database.ChildEventListener
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.ktx.storageMetadata
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 class ChatRepositoryImpl @Inject constructor(
@@ -175,14 +179,6 @@ class ChatRepositoryImpl @Inject constructor(
             .map { messageData ->
                 messageData?.toDomain()
             }
-    }
-
-    override suspend fun fetchChatRoomFromDB(chatRoomId: String): Flow<List<ChatRoomDomain.ReaderLogDomain>> {
-        return roomDB.getChatRoomDao().fetchReaderLogs(targetChatRoom = chatRoomId).map { list ->
-            list.map {
-                ChatRoomDomain.ReaderLogDomain(it.participantsId, it.participationTime)
-            }
-        }
     }
 
     companion object {
