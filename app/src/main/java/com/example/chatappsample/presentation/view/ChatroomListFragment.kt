@@ -7,6 +7,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.AnimationUtils
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
@@ -23,6 +24,7 @@ import com.example.chatappsample.presentation.viewmodel.UserViewModel
 import com.example.chatappsample.util.COERCE_DATE_FORMAT
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
+import java.lang.NullPointerException
 import java.util.*
 import kotlin.collections.ArrayList
 import java.text.SimpleDateFormat
@@ -30,10 +32,10 @@ import java.text.SimpleDateFormat
 class ChatroomListFragment : Fragment() {
 
     private val viewModel by lazy { ViewModelProvider(requireActivity())[UserViewModel::class.java] }
-    private lateinit var binding: FragmentChatroomListBinding
+    private var binding: FragmentChatroomListBinding? = null
     private var chatroomDomainList = arrayListOf<ChatroomDomain>()
-    private var currentUserId = ""
     private lateinit var rvAdapter: MainChatroomAdapter
+    private val progressBar by lazy { binding?.rvMainChatroomRecyclerviewProgressbar }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -42,9 +44,9 @@ class ChatroomListFragment : Fragment() {
     ): View {
         binding =
             DataBindingUtil.inflate(inflater, R.layout.fragment_chatroom_list, container, false)
-        binding.lifecycleOwner = this.viewLifecycleOwner
-        binding.viewModel = ViewModelProvider(requireActivity())[UserViewModel::class.java]
-        return binding.root
+        binding!!.lifecycleOwner = this.viewLifecycleOwner
+        binding!!.viewModel = ViewModelProvider(requireActivity())[UserViewModel::class.java]
+        return binding!!.root
     }
 
     @SuppressLint("NotifyDataSetChanged")
@@ -52,71 +54,44 @@ class ChatroomListFragment : Fragment() {
 
         // Initialize recyclerview
         rvAdapter = MainChatroomAdapter(
-            currentUserId = currentUserId,
+            currentUserId = viewModel.currentUser(),
             chatroomDomainList = chatroomDomainList
         )
-        binding.viewModel!!.currentUserDomain.observe(viewLifecycleOwner) {
-            currentUserId = it?.uid ?: ""
-            rvAdapter.currentUserId = currentUserId
-        }
-        binding.rvMainChatroomRecyclerview.adapter = rvAdapter
+        binding!!.rvMainChatroomRecyclerview.adapter = rvAdapter
 
         lifecycleScope.launch(Dispatchers.IO) {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                binding.viewModel!!.chatroomList.collectLatest {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                binding!!.viewModel!!.chatroomList.collectLatest {
                     if (it.isEmpty()) return@collectLatest
-                    println("┏━채팅방 목록━━━━")
-                    it.forEach { c ->
-                        println("┃$c")
-                    }
-                    println("┗━━━━━━━━━━━━━━")
 
                     val chatroomList = it as ArrayList<ChatroomDomain>
-                    withContext(Dispatchers.Main) {
-                        rvAdapter.chatroomDomainList = chatroomList
-                        rvAdapter.chatroomDomainList.forEachIndexed { idx, chatroom ->
-                            viewModel.fetchLastMessage(chatroom).collect { message ->
+                    rvAdapter.chatroomDomainList = chatroomList
+                    rvAdapter.chatroomDomainList.forEachIndexed { idx, chatroom ->
+                        viewModel.fetchMessagesFromExternalDB(chatroom.chatroomId, this)
+                        viewModel.fetchLastMessage(chatroom).collectLatest { message ->
+
+                            withContext(Dispatchers.Main) {
                                 rvAdapter.addLastMessageToList(chatroom, message)
                                 rvAdapter.notifyItemChanged(idx)
                             }
                         }
-                        rvAdapter.notifyDataSetChanged()
                     }
+                    rvAdapter.notifyDataSetChanged()
                 }
             }
         }
-//        binding.viewModel!!.userList.observe(viewLifecycleOwner) { it ->
-//            val userDomainList = it as ArrayList<UserDomain>
-//            lifecycleScope.launch {
-//                withContext(Dispatchers.IO) {
-//                    viewModel.getChatRoomIdsByParticipantsId(currentUserId, userDomainList.map { userDomain -> userDomain.uid})
-//                }
-//            }
-//            rvAdapter.chatroomDomainList = userDomainList
-//            rvAdapter.chatroomDomainList.forEachIndexed { index, user ->
-//                lifecycleScope.launch {
-//                    viewModel.takeLastMessage(user).collect {
-//                        println("마지막 메시지: $message")
-//                        rvAdapter.addLastMessageToList(user, message)
-//                        rvAdapter.notifyItemChanged(index)
-//                    }
-//                }
-//                rvAdapter.notifyDataSetChanged()
-//            }
-//
-//        }
 
         rvAdapter.setOnChatRoomClickListener(object : MainChatroomAdapter.ChatRoomClickListener {
             override fun onChatRoomClick(view: View, position: Int) {
                 showProgressbar()
                 val chatroom = rvAdapter.chatroomDomainList[position]
-                val yourId = chatroom.readerLog.filter { it.userId != currentUserId }[0].userId
+                val yourId = chatroom.readerLog.filter { it.userId != viewModel.currentUser() }[0].userId
                 val intent = Intent(requireContext(), ChatActivity::class.java).apply {
                     putExtra(ChatActivity.YOUR_ID, yourId)
-                    putExtra(ChatActivity.CURRENT_UID, currentUserId)
+                    putExtra(ChatActivity.CURRENT_UID, viewModel.currentUser())
                 }
                 viewModel.updateChatRoom(
-                    currentUserId,
+                    viewModel.currentUser(),
                     yourId,
                     SimpleDateFormat(
                         COERCE_DATE_FORMAT,
@@ -126,6 +101,9 @@ class ChatroomListFragment : Fragment() {
                         ChatViewModel.setReceiverRoom(it)
                         intent.putExtra(ChatActivity.CHATROOM_ID, it)
                         hideProgressbar()
+                        if (context == null) {
+                            throw NullPointerException("Fragment is not attached on context.")
+                        }
                         requireContext().startActivity(intent)
                     },
                     {
@@ -139,19 +117,22 @@ class ChatroomListFragment : Fragment() {
                 )
             }
         })
-        binding.rvMainChatroomRecyclerview.layoutManager = LinearLayoutManager(requireContext())
+        binding!!.rvMainChatroomRecyclerview.layoutManager = LinearLayoutManager(requireContext())
 
         super.onViewCreated(view, savedInstanceState)
     }
 
     fun showProgressbar() {
-        binding.rvMainChatroomRecyclerview.isEnabled = false
-        binding.rvMainChatroomRecyclerviewProgressbar.visibility = View.VISIBLE
-        binding.rvMainChatroomRecyclerviewProgressbar.show()
+        binding?.rvMainChatroomRecyclerview?.isEnabled = false
+        val rotateAnimation = AnimationUtils.loadAnimation(this.requireActivity(), R.anim.rotate_progress_indicator)
+        progressBar?.visibility = View.VISIBLE
+        progressBar?.startAnimation(rotateAnimation)
+//        progressBar?.show()
     }
 
     fun hideProgressbar() {
-        binding.rvMainChatroomRecyclerview.isEnabled = true
-        binding.rvMainChatroomRecyclerviewProgressbar.visibility = View.INVISIBLE
+        binding?.rvMainChatroomRecyclerview?.isEnabled = true
+        progressBar?.clearAnimation()
+        progressBar?.visibility = View.INVISIBLE
     }
 }

@@ -5,6 +5,7 @@ import com.example.chatappsample.domain.repository.ChatroomRepository
 import com.example.chatappsample.domain.repository.UserRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -19,10 +20,19 @@ class FetchChatroomListFromRoomUsecase @Inject constructor(
     ): Flow<List<ChatroomDomain>> {
 
         val chatroomDomainList = chatroomRepo.fetchChatroomListFromRoom(currentUserId)
+            .catch {
+                throw Exception("Fetching ChatroomList Failed.")
+            }
             .map {
                 it.map { chatroomDomain ->
+
                     chatroomDomain.apply {
-                        val readerLogJob = withContext(Dispatchers.IO) { chatroomRepo.fetchReaderLogFromRoom(chatroomDomain.chatroomId) }
+
+                        val readerLogJob = withContext(Dispatchers.IO) {
+                            delay(100L)
+                            chatroomRepo.fetchReaderLogFromRoom(chatroomDomain.chatroomId)
+                        }
+
                         this.readerLog = readerLogJob
 
                         this.chatroomName = this.readerLog.filter { readerLog ->

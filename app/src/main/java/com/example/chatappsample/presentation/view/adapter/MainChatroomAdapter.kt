@@ -7,7 +7,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.chatappsample.R
 import com.example.chatappsample.domain.dto.ChatroomDomain
 import com.example.chatappsample.domain.dto.MessageDomain
+import com.example.chatappsample.util.convertSimpleDateFormatToTime
 import com.google.android.material.textview.MaterialTextView
+import java.text.SimpleDateFormat
 
 class MainChatroomAdapter(var currentUserId: String, var chatroomDomainList: ArrayList<ChatroomDomain>): RecyclerView.Adapter<MainChatroomAdapter.CustomViewHolder>() {
 
@@ -37,6 +39,11 @@ class MainChatroomAdapter(var currentUserId: String, var chatroomDomainList: Arr
         holder.chatroomName.text = selectedChatroom.chatroomName
         holder.userLastMessage.text = lastMessage?.message?.ifEmpty { "사진" } ?: ""
         holder.userLastMessageTime.text = lastMessage?.sentTime ?: ""
+
+        holder.userLastMessageTime.text = if (lastMessage == null) "" else {
+            val currentTime = convertSimpleDateFormatToTime(lastMessage.sentTime)[0]
+            currentTime
+        }
     }
 
     override fun getItemCount(): Int = chatroomDomainList.size

@@ -14,6 +14,8 @@ import com.example.chatappsample.domain.dto.MessageDomain
 import com.example.chatappsample.domain.usecase.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.collectIndexed
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
@@ -46,10 +48,6 @@ class ChatViewModel @Inject constructor(
     private val newlyMessageDomainList = mutableListOf<MessageDomain>()
     private val preMessageDomainList = mutableListOf<MessageDomain>()
 
-    private val _readerLogs = MutableLiveData<List<ChatroomDomain.ReaderLogDomain>>()
-    val readerLogs: LiveData<List<ChatroomDomain.ReaderLogDomain>>
-        get() = _readerLogs
-
     init {
         viewModelScope.launch(Dispatchers.IO) {
             fetchMessagesFromExternalDB(chatRoomId)
@@ -70,7 +68,7 @@ class ChatViewModel @Inject constructor(
         )
     }
 
-    private suspend fun fetchMessagesFromExternalDB(chatRoom: String) {
+    private fun fetchMessagesFromExternalDB(chatRoom: String) {
         fetchMessagesFromExternalDBUsecase(chatRoom, viewModelScope)
     }
 
@@ -90,17 +88,17 @@ class ChatViewModel @Inject constructor(
         val oldMessages = fetchMessageFromRoomDBUsecase(chatRoom, basicMessageDownloadSize, offsetSize - basicMessageDownloadSize + receivedMessages)
 
         newlyMessageDomainList.addAll(0, oldMessages)
-        if (newlyMessageDomainList.isEmpty()) fetchLastMessageFromRoomDB(chatRoom)
+        withContext(Dispatchers.IO) { if (newlyMessageDomainList.isEmpty()) fetchLastMessageFromRoomDB(chatRoom) }
         _messageDomainList.postValue(newlyMessageDomainList)
     }
 
     private suspend fun fetchLastMessageFromRoomDB(chatRoom: String) {
         addMessageAfterLaunchingActivity()
-        fetchLastMessageUsecase(chatRoom).stateIn(viewModelScope).collect {
+        fetchLastMessageUsecase(chatRoom).collect {
             if (it == null) return@collect
 
             newlyMessageDomainList.add(it)
-            _messageDomainList.postValue(newlyMessageDomainList)
+            withContext(Dispatchers.Main) { _messageDomainList.postValue(newlyMessageDomainList) }
         }
     }
 

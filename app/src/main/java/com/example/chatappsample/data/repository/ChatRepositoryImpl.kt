@@ -29,44 +29,51 @@ class ChatRepositoryImpl @Inject constructor(
 
     private val db = firebaseDatabase.reference
 
-    override suspend fun fetchMessagesFromExternalDB(
+    override fun fetchMessagesFromExternalDB(
         chatRoom: String,
         coroutineScope: CoroutineScope
     ) {
+
+        if (mMessageCoroutineScope != null && mMessageCoroutineScope == coroutineScope) return
+
+        if (mMessageChildEventListener != null) {
+            db
+                .child(FIREBASE_FIRST_CHILD_CHATS)
+                .child(chatRoom)
+                .child(FIREBASE_SECOND_CHILD_MESSAGES)
+                .removeEventListener(mMessageChildEventListener!!)
+        }
+
+        mMessageCoroutineScope = coroutineScope
+        mMessageChildEventListener = object: ChildEventListener {
+            override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
+                mMessageCoroutineScope!!.launch(Dispatchers.IO) {
+                    val receivedMessageData = snapshot.getValue(MessageData::class.java)
+                    receivedMessageData?.chatRoom = chatRoom
+                    if (receivedMessageData != null) {
+                        roomDB
+                            .getMessageDao()
+                            .insertMessage(receivedMessageData)
+                    }
+                }
+            }
+
+            override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {}
+
+            override fun onChildRemoved(snapshot: DataSnapshot) {}
+
+            override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {}
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.d("ERROR:", error.message)
+            }
+        }
+
         db
             .child(FIREBASE_FIRST_CHILD_CHATS)
             .child(chatRoom)
             .child(FIREBASE_SECOND_CHILD_MESSAGES)
-            .addChildEventListener(object : ChildEventListener {
-                override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
-                    coroutineScope.launch(Dispatchers.IO) {
-                        val receivedMessageData = snapshot.getValue(MessageData::class.java)
-                        receivedMessageData?.chatRoom = chatRoom
-                        if (receivedMessageData != null) {
-                            roomDB
-                                .getMessageDao()
-                                .insertMessage(receivedMessageData)
-                        }
-                    }
-                }
-
-                override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
-
-                }
-
-                override fun onChildRemoved(snapshot: DataSnapshot) {
-
-                }
-
-                override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {
-
-                }
-
-                override fun onCancelled(error: DatabaseError) {
-                    Log.d("ERROR:", error.message)
-                }
-
-            })
+            .addChildEventListener(mMessageChildEventListener!!)
     }
 
     override suspend fun fetchMessagesFromRoomDBAsFlow(
@@ -175,8 +182,10 @@ class ChatRepositoryImpl @Inject constructor(
     }
 
     override suspend fun fetchLastMessageOfChatRoom(chatRoom: String): Flow<MessageDomain?> {
+        println("이벤트 호출")
         return roomDB.getMessageDao().fetchLastReceivedMessages(chatRoom)
             .map { messageData ->
+                println("--마지막 메시지-- $messageData")
                 messageData?.toDomain()
             }
     }
@@ -184,5 +193,13 @@ class ChatRepositoryImpl @Inject constructor(
     companion object {
         const val FIREBASE_FIRST_CHILD_CHATS = "chats"
         const val FIREBASE_SECOND_CHILD_MESSAGES = "messages"
+
+        private var mMessageChildEventListener: ChildEventListener? = null
+        private var mMessageCoroutineScope: CoroutineScope? = null
+
+        fun initializeOverlapCheck() {
+            mMessageChildEventListener = null
+            mMessageCoroutineScope = null
+        }
     }
 }

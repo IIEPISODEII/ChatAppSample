@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface MessageDataDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insertMessage(message: MessageData)
 
     @Query("SELECT * FROM messages WHERE chatRoom = :chatRoom ORDER BY sentTime LIMIT :limit")

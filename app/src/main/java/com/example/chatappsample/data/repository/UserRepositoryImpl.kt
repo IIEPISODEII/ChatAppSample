@@ -5,6 +5,7 @@ import android.util.Log
 import com.example.chatappsample.data.entity.UserData
 import com.example.chatappsample.domain.`interface`.*
 import com.example.chatappsample.domain.dto.UserDomain
+import com.example.chatappsample.domain.repository.ChatroomRepository
 import com.example.chatappsample.domain.repository.UserRepository
 import com.example.chatappsample.util.TEN_MEGABYTE
 import com.google.firebase.auth.FirebaseAuth
@@ -27,48 +28,79 @@ class UserRepositoryImpl @Inject constructor(
 
     private val db = firebaseDatabase.reference
 
+    private var isUserFetched = false
+    private var mCurrentUserFetchValueEventListener: ValueEventListener? = null
+
     override fun fetchCurrentUser(listener: OnGetDataListener) {
+        if (isUserFetched) return
+
         val firebaseUserId = firebaseAuth.currentUser?.uid ?: "NO ID"
+
+        if (mCurrentUserFetchValueEventListener != null) {
+            db
+                .child(FIREBASE_FIRST_CHILD_USERS)
+                .child(firebaseUserId)
+                .removeEventListener(mCurrentUserFetchValueEventListener!!)
+        }
+
+        isUserFetched = true
+        mCurrentUserFetchValueEventListener = object: ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                listener.onSuccess(snapshot)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                listener.onFailure(error)
+            }
+        }
 
         db
             .child(FIREBASE_FIRST_CHILD_USERS)
             .child(firebaseUserId)
-            .addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    listener.onSuccess(snapshot)
-                }
-
-                override fun onCancelled(error: DatabaseError) {
-                    listener.onFailure(error)
-                }
-            })
+            .addValueEventListener(mCurrentUserFetchValueEventListener!!)
     }
 
     private fun insertUser(userData: UserData) = roomDB.getUserDao().insertUser(userData)
 
+    private var mUserListFirebaseChildEventListener: ChildEventListener? = null
+    private var mUserListCoroutine: CoroutineScope? = null
+
     override fun fetchUserListFromExternalDB(coroutineScope: CoroutineScope) {
+        if (mUserListCoroutine != null && mUserListCoroutine == coroutineScope) return
+
+        if (mUserListFirebaseChildEventListener != null) {
+            db
+                .child(FIREBASE_FIRST_CHILD_USERS)
+                .removeEventListener(mUserListFirebaseChildEventListener!!)
+        }
+
+        mUserListCoroutine = coroutineScope
+
+        mUserListFirebaseChildEventListener = object: ChildEventListener {
+            override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
+                coroutineScope.launch(Dispatchers.IO) { insertUser(snapshot.getValue(UserData::class.java)!!) }
+            }
+
+            override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
+                coroutineScope.launch(Dispatchers.IO) { insertUser(snapshot.getValue(UserData::class.java)!!) }
+            }
+
+            override fun onChildRemoved(snapshot: DataSnapshot) {
+                coroutineScope.launch(Dispatchers.IO) { roomDB.getUserDao().deleteUser(snapshot.getValue(UserData::class.java)!!) }
+            }
+
+            override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.d("ERROR:", error.message)
+            }
+        }
+
         db
             .child(FIREBASE_FIRST_CHILD_USERS)
-            .addChildEventListener(object : ChildEventListener {
-                override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
-                    coroutineScope.launch(Dispatchers.IO) { insertUser(snapshot.getValue(UserData::class.java)!!) }
-                }
+            .addChildEventListener(mUserListFirebaseChildEventListener!!)
 
-                override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
-                    coroutineScope.launch(Dispatchers.IO) { insertUser(snapshot.getValue(UserData::class.java)!!) }
-                }
-
-                override fun onChildRemoved(snapshot: DataSnapshot) {
-                    coroutineScope.launch(Dispatchers.IO) { roomDB.getUserDao().deleteUser(snapshot.getValue(UserData::class.java)!!) }
-                }
-
-                override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {
-                }
-
-                override fun onCancelled(error: DatabaseError) {
-                    Log.d("ERROR:", error.message)
-                }
-            })
     }
 
     override suspend fun fetchUserListFromRoomDB(): Flow<List<UserDomain>> {
@@ -93,6 +125,14 @@ class UserRepositoryImpl @Inject constructor(
 
     override fun signOut(): Boolean {
         firebaseAuth.signOut()
+
+        isUserFetched = false
+        isProfileImageDownloaded = false
+        mUserListCoroutine = null
+        mUserListFirebaseChildEventListener = null
+
+        ChatroomRepositoryImpl.initializeOverlapCheck()
+        ChatRepositoryImpl.initializeOverlapCheck()
 
         if (firebaseAuth.currentUser == null) return true
         return false
@@ -208,10 +248,14 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    private var isProfileImageDownloaded = false
+
     override fun downloadProfileImage(
         userID: String,
         onFileDownloadListener: OnFileDownloadListener
     ) {
+        if (isProfileImageDownloaded) return
+        isProfileImageDownloaded = true
 
         firebaseStorage.reference
             .child("profileImages/$userID")
@@ -225,7 +269,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun fetchUserById(uid: String): UserDomain {
-        val userData = roomDB.getUserDao().fetchUserById(uid)
+        val userData = roomDB.getUserDao().fetchUserById(uid) ?: return UserDomain()
         return UserDomain(name = userData.name, email = userData.email, uid = userData.uid, profileImage = userData.profileImage, lastTimeStamp = userData.lastTimeStamp)
     }
 

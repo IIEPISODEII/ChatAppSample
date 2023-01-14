@@ -16,24 +16,27 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.bumptech.glide.Glide
 import com.example.chatappsample.R
+import com.example.chatappsample.data.repository.AppDatabase
 import com.example.chatappsample.databinding.ActivityMainBinding
 import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
 import com.example.chatappsample.domain.dto.UserDomain
-import com.example.chatappsample.domain.repository.UserRepository
 import com.example.chatappsample.presentation.viewmodel.UserViewModel
 import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : FragmentActivity() {
 
     @Inject
-    lateinit var userRepo: UserRepository
-
+    lateinit var roomDB: AppDatabase 
+    
     val viewModel: UserViewModel by lazy { ViewModelProvider(this)[UserViewModel::class.java] }
     private lateinit var mBinding: ActivityMainBinding
     private var currentUserDomain: UserDomain? = null
@@ -50,14 +53,16 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        lifecycleScope.launch(Dispatchers.IO) {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.setCurrentUserIdAndFetchChatroomList(intent.getStringExtra(CURRENT_USER)!!, this)
-            }
-        }
-        viewModel.fetchAllUsersList()
+        val currentUserId = intent.getStringExtra(CURRENT_USER)!!
+        viewModel.fetchAllUsersList(currentUserId)
 
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.setCurrentUserIdAndFetchChatroomList(currentUserId, this)
+            }
+        }
 
         mBinding = DataBindingUtil.setContentView(this, R.layout.activity_main)
         mBinding.viewModel = this@MainActivity.viewModel
@@ -92,10 +97,11 @@ class MainActivity : FragmentActivity() {
 
         mBinding.viewpager2Main.adapter = mainPagerAdapter
 
-        TabLayoutMediator(mBinding.tablayoutMainTablayout, mBinding.viewpager2Main, TabLayoutMediator.TabConfigurationStrategy { tab, position ->
+        TabLayoutMediator(mBinding.tablayoutMainTablayout, mBinding.viewpager2Main) { tab, position ->
             tab.text = mainTabItemList[position].tabString
-            tab.icon = AppCompatResources.getDrawable(this, mainTabItemList[position].tabIconDrawableId)
-        }).attach()
+            tab.icon =
+                AppCompatResources.getDrawable(this, mainTabItemList[position].tabIconDrawableId)
+        }.attach()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {

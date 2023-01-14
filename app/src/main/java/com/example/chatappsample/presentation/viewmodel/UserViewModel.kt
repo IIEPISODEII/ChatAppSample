@@ -1,10 +1,7 @@
 package com.example.chatappsample.presentation.viewmodel
 
 import android.util.Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.*
 import com.example.chatappsample.domain.`interface`.*
 import com.example.chatappsample.domain.dto.ChatroomDomain
 import com.example.chatappsample.domain.dto.MessageDomain
@@ -34,12 +31,16 @@ class UserViewModel @Inject constructor(
     private val getAutoLoginCheckUsecase: GetAutoLoginCheckUsecase,
     private val updateCurrentUserUsecase: UpdateCurrentUserUsercase,
     private val downloadProfileImageUsecase: DownloadProfileImageUsecase,
+    private val fetchMessagesFromExternalDBUsecase: FetchMessagesFromExternalDBUsecase,
+    private val fetchMessageFromRoomDBUsecase: FetchMessagesFromRoomDBUsecase,
     private val fetchLastMessageUsecase: FetchLastMessageUsecase,
     private val updateChatRoomUsecase: UpdateChatroomUsecase
 ) : ViewModel() {
 
     private var currentUserId: String = ""
-    private var _chatRoomList = MutableStateFlow<List<ChatroomDomain>>(listOf())
+    fun currentUser() = currentUserId
+
+    private val _chatRoomList = MutableStateFlow<List<ChatroomDomain>>(listOf())
     val chatroomList: StateFlow<List<ChatroomDomain>>
         get() = _chatRoomList
     suspend fun setCurrentUserIdAndFetchChatroomList(id: String, coroutineScope: CoroutineScope) {
@@ -48,9 +49,9 @@ class UserViewModel @Inject constructor(
         _chatRoomList.value = fetchChatRoomListFromRoomUsecase(currentUserId).stateIn(coroutineScope).value
     }
 
-    fun fetchAllUsersList() {
+    fun fetchAllUsersList(myId: String) {
         viewModelScope.launch {
-            fetchAllUsers().collect {
+            fetchAllUsers(myId).collect {
                 _userList.postValue(it)
             }
         }
@@ -81,8 +82,8 @@ class UserViewModel @Inject constructor(
     val userList: LiveData<List<UserDomain>>
         get() = _userList
 
-    private suspend fun fetchAllUsers(): Flow<List<UserDomain>> {
-        return fetchUserListUsecase().map { list -> list.filter { user -> user.uid != currentUserId } }
+    private suspend fun fetchAllUsers(myId: String): Flow<List<UserDomain>> {
+        return fetchUserListUsecase(myId).stateIn(viewModelScope)
     }
 
     fun fetchUserListFromExternalDB() = fetchUserListFromExternalDBUsecase(viewModelScope)
@@ -127,11 +128,15 @@ class UserViewModel @Inject constructor(
         _isProfileEditMode.postValue(mode)
     }
 
-    suspend fun fetchLastMessage(chatRoom: ChatroomDomain): StateFlow<MessageDomain?> {
+    suspend fun fetchLastMessage(chatRoom: ChatroomDomain): Flow<MessageDomain?> {
         return fetchLastMessageUsecase(chatRoom.chatroomId).stateIn(viewModelScope)
     }
 
     fun updateChatRoom(myId: String, yourId: String, time: String, onSuccess: (String) -> Unit, onFail: () -> Unit, enter: Boolean) {
         updateChatRoomUsecase(myId, yourId, time, onSuccess, onFail, enter, viewModelScope)
+    }
+
+    fun fetchMessagesFromExternalDB(chatroom: String, coroutineScope: CoroutineScope) {
+        fetchMessagesFromExternalDBUsecase(chatroom, coroutineScope)
     }
 }

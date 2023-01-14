@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface ChatRepository {
 
-    suspend fun fetchMessagesFromExternalDB(
+    fun fetchMessagesFromExternalDB(
         chatRoom: String,
         coroutineScope: CoroutineScope
     )

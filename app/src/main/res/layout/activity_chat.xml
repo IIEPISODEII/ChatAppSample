@@ -84,11 +84,12 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/tlb_chat_toolbar" />
 
-            <ProgressBar
+            <com.google.android.material.progressindicator.CircularProgressIndicator
                 android:id="@+id/prgbar_chat_progressbar"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:indeterminateTint="@color/skyblue"
+                android:progress="25"
                 android:visibility="gone"
                 app:layout_constraintBottom_toBottomOf="@id/rv_chat_recyclerview"
                 app:layout_constraintEnd_toEndOf="parent"

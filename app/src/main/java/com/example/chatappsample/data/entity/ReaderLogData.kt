@@ -9,7 +9,7 @@ import androidx.room.ForeignKey.CASCADE
     primaryKeys = ["chatroomId", "userId"],
     foreignKeys = [ForeignKey(
         entity = ChatroomData::class,
-        parentColumns = ["chatroomId", "currentAccountId"],
+        parentColumns = ["chatroomId", "currentUserId"],
         childColumns = ["chatroomId", "currentAccountId"],
         onDelete = CASCADE
     )]

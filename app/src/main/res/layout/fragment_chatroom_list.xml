@@ -18,13 +18,13 @@
             android:id="@+id/rv_main_chatroom_recyclerview_progressbar"
             android:layout_width="50dp"
             android:layout_height="50dp"
-            android:visibility="invisible"
+            android:visibility="gone"
+            android:progress="25"
             app:indicatorColor="@color/skyblue"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:trackColor="@color/grey" />
+            app:layout_constraintTop_toTopOf="parent"/>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_main_chatroom_recyclerview"

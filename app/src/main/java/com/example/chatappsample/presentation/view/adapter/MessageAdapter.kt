@@ -12,6 +12,7 @@ import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.example.chatappsample.R
 import com.example.chatappsample.domain.dto.ChatroomDomain
 import com.example.chatappsample.domain.dto.MessageDomain
+import com.example.chatappsample.util.convertSimpleDateFormatToTime
 import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.textview.MaterialTextView
 
@@ -284,10 +285,5 @@ class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: 
         notifyDataSetChanged()
     }
 
-    private fun convertSimpleDateFormatToTime(sdf: String): Array<String> {
-        val dateToRead = sdf.substring(0, if (sdf.lastIndex >= 10) 10 else sdf.lastIndex).split('-').joinToString(".") { it.toInt().toString() }
-        val time = sdf.substring(11, 16).split(':').map { it.toInt().toString() }
-        val timeToRead = (if (time[0].toInt() < 12) "오전 " + (if (time[0] != "0") time[0] else "12") else "오후 " + (if (time[0] != "12") (time[0].toInt()-12).toString() else "12")) + ":" + time[1].padStart(2, '0')
-        return arrayOf(dateToRead, timeToRead)
-    }
+
 }

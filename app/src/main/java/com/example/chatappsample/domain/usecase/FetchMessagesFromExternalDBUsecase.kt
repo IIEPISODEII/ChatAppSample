@@ -6,7 +6,7 @@ import javax.inject.Inject
 
 class FetchMessagesFromExternalDBUsecase @Inject constructor(private val repo: ChatRepository) {
 
-    suspend operator fun invoke(chatRoom: String, coroutineScope: CoroutineScope) {
+    operator fun invoke(chatRoom: String, coroutineScope: CoroutineScope) {
         repo.fetchMessagesFromExternalDB(chatRoom, coroutineScope)
     }
 }

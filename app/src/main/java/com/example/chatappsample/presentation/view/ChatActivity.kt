@@ -4,9 +4,11 @@ import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
-import android.os.Build
-import android.os.Bundle
+import android.os.*
 import android.view.*
+import android.view.animation.Animation
+import android.view.animation.AnimationUtils
+import android.view.animation.Transformation
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
@@ -30,6 +32,7 @@ import com.example.chatappsample.util.COERCE_DATE_FORMAT
 import com.example.chatappsample.util.FULL_DATE_FORMAT
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.imageview.ShapeableImageView
+import com.google.android.material.progressindicator.CircularProgressIndicator
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textview.MaterialTextView
 import dagger.hilt.android.AndroidEntryPoint
@@ -52,7 +55,7 @@ class ChatActivity : AppCompatActivity() {
     private val messageBox by lazy { this.findViewById<TextInputEditText>(R.id.et_chat_messagebox) }
     private val sendMessageButton by lazy { this.findViewById<ShapeableImageView>(R.id.imgbtn_send_message) }
     private val addNewItemButton by lazy { this.findViewById<ShapeableImageView>(R.id.imgbtn_add_new_item) }
-    private val progressBar by lazy { this.findViewById<ProgressBar>(R.id.prgbar_chat_progressbar) }
+    private val progressBar by lazy { this.findViewById<CircularProgressIndicator>(R.id.prgbar_chat_progressbar) }
     private val imm by lazy { messageBox.context.getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager }
 
     private lateinit var messageAdapter: MessageAdapter
@@ -62,8 +65,6 @@ class ChatActivity : AppCompatActivity() {
     private var myId = ""
     private var yourId = ""
     private var chatRoomId = ""
-
-    private val updateChatRoomScope = CoroutineScope(Dispatchers.IO)
 
     @RequiresApi(Build.VERSION_CODES.M)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -172,12 +173,8 @@ class ChatActivity : AppCompatActivity() {
         chatViewModel.messageDomainList.observe(this) { messageList ->
             if (messageList.isEmpty()) return@observe
 
-            try {
-                messageAdapter.setUriListSize(messageList.size)
-                messageAdapter.submitList(messageList.toMutableList())
-            } catch(e: Exception) {
-                e.printStackTrace()
-            }
+            messageAdapter.setUriListSize(messageList.size)
+            messageAdapter.submitList(messageList.toMutableList())
 
             // 메시지 처음 받아올 때, 가장 최근 메시지로 스크롤 이동
             if (isFirstLoading) {
@@ -230,11 +227,6 @@ class ChatActivity : AppCompatActivity() {
             }
 
             chatViewModel.setPreMessageList(messageList)
-        }
-
-        // 채팅 로그 동기화
-        chatViewModel.readerLogs.observe(this) {
-            messageAdapter.setReaderLog(it)
         }
 
         // 이미지 추가 버튼 클릭
@@ -397,13 +389,17 @@ class ChatActivity : AppCompatActivity() {
         }
     }
 
+
     private fun showProgressBar() {
+        val animation = AnimationUtils.loadAnimation(this@ChatActivity, R.anim.rotate_progress_indicator)
         progressBar.visibility = View.VISIBLE
+        progressBar.startAnimation(animation)
         window.addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
     }
 
     private fun hideProgressBar() {
         progressBar.visibility = View.GONE
+        progressBar.clearAnimation()
         window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
     }
 

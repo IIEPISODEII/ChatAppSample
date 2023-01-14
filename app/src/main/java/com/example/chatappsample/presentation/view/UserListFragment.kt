@@ -86,15 +86,4 @@ class UserListFragment : Fragment() {
 
         super.onViewCreated(view, savedInstanceState)
     }
-
-    fun showProgressbar() {
-        binding.rvMainUserRecyclerview.isEnabled = false
-        binding.rvMainUserRecyclerviewProgressbar.visibility = View.VISIBLE
-        binding.rvMainUserRecyclerviewProgressbar.show()
-    }
-
-    fun hideProgressbar() {
-        binding.rvMainUserRecyclerview.isEnabled = true
-        binding.rvMainUserRecyclerviewProgressbar.visibility = View.INVISIBLE
-    }
 }

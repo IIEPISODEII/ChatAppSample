@@ -16,5 +16,5 @@ interface UserDataDao {
     fun fetchUserList(): Flow<List<UserData>>
 
     @Query("SELECT * FROM users WHERE uid = :userId")
-    fun fetchUserById(userId: String): UserData
+    fun fetchUserById(userId: String): UserData?
 }
