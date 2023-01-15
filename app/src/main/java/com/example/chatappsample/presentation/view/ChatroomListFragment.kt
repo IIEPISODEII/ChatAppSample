@@ -127,7 +127,6 @@ class ChatroomListFragment : Fragment() {
         val rotateAnimation = AnimationUtils.loadAnimation(this.requireActivity(), R.anim.rotate_progress_indicator)
         progressBar?.visibility = View.VISIBLE
         progressBar?.startAnimation(rotateAnimation)
-//        progressBar?.show()
     }
 
     fun hideProgressbar() {

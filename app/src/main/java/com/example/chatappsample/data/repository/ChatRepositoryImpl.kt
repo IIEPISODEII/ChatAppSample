@@ -182,10 +182,8 @@ class ChatRepositoryImpl @Inject constructor(
     }
 
     override suspend fun fetchLastMessageOfChatRoom(chatRoom: String): Flow<MessageDomain?> {
-        println("이벤트 호출")
         return roomDB.getMessageDao().fetchLastReceivedMessages(chatRoom)
             .map { messageData ->
-                println("--마지막 메시지-- $messageData")
                 messageData?.toDomain()
             }
     }

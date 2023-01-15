@@ -14,9 +14,7 @@ import com.example.chatappsample.domain.dto.MessageDomain
 import com.example.chatappsample.domain.usecase.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collectIndexed
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 @HiltViewModel
@@ -24,6 +22,9 @@ class ChatViewModel @Inject constructor(
     private val sendMessageUsecase: SendMessageUsecase,
     private val fetchMessagesFromExternalDBUsecase: FetchMessagesFromExternalDBUsecase,
     private val fetchMessageFromRoomDBUsecase: FetchMessagesFromRoomDBUsecase,
+    private val fetchChatroomListFromRoomUsecase: FetchChatroomListFromRoomUsecase,
+    private val fetchReaderLogFromExternalDBUsecase: FetchReaderLogFromExternalDBUsecase,
+    private val fetchReaderLogAsFlowUsecase: FetchChatroomListFromRoomAsFlowUsecase,
     private val fetchLastMessageUsecase: FetchLastMessageUsecase,
     private val uploadFileUsecase: UploadFileUsecase,
     private val downloadFileUsecase: DownloadFileUsecase,
@@ -136,7 +137,19 @@ class ChatViewModel @Inject constructor(
         downloadProfileImageUsecase(userID, onFileDownloadListener)
     }
 
-    fun updateChatRoom(myId: String, yourId: String, time: String, onSuccess: (String) -> Unit, onFail: () -> Unit, enter: Boolean, coroutineScope: CoroutineScope = viewModelScope) {
-        updateChatRoomUsecase(myId, yourId, time, onSuccess, onFail, enter, coroutineScope)
+    fun updateChatRoom(myId: String, yourId: String, time: String, onSuccess: (String) -> Unit, onFail: () -> Unit, enter: Boolean) {
+        updateChatRoomUsecase(myId, yourId, time, onSuccess, onFail, enter)
+    }
+
+    fun fetchReaderLogFromExternalDB(chatroomId: String, myId: String, coroutineScope: CoroutineScope) {
+        fetchReaderLogFromExternalDBUsecase(chatroomId, myId, coroutineScope)
+    }
+
+    suspend fun fetchChatroomInformation(userId: String): Flow<List<ChatroomDomain>> {
+        return fetchChatroomListFromRoomUsecase(userId)
+    }
+
+    suspend fun fetchReaderLogAsFlow(): Flow<List<ChatroomDomain.ReaderLogDomain>> {
+        return fetchReaderLogAsFlowUsecase(chatRoomId)
     }
 }

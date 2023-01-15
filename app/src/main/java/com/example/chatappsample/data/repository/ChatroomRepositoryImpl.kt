@@ -2,12 +2,9 @@ package com.example.chatappsample.data.repository
 
 import android.os.Build
 import android.util.Log
-import androidx.work.OneTimeWorkRequest
-import androidx.work.WorkManager
 import com.example.chatappsample.data.entity.ChatroomData
 import com.example.chatappsample.data.entity.ReaderLogData
 import com.example.chatappsample.data.repository.ChatRepositoryImpl.Companion.FIREBASE_FIRST_CHILD_CHATS
-import com.example.chatappsample.data.repository.worker.UpdateChatroomWorker
 import com.example.chatappsample.domain.dto.ChatroomDomain
 import com.example.chatappsample.domain.repository.ChatroomRepository
 import com.google.android.gms.tasks.OnSuccessListener
@@ -19,8 +16,7 @@ import javax.inject.Inject
 
 class ChatroomRepositoryImpl @Inject constructor(
     firebaseDatabase: FirebaseDatabase,
-    private val roomDB: AppDatabase,
-    private val workManager: WorkManager
+    private val roomDB: AppDatabase
 ) : ChatroomRepository {
 
     private val db = firebaseDatabase.reference
@@ -32,8 +28,7 @@ class ChatroomRepositoryImpl @Inject constructor(
         time: String,
         onSuccess: (String) -> (Unit),
         onFail: () -> (Unit),
-        enter: Boolean,
-        coroutineScope: CoroutineScope
+        enter: Boolean
     ) {
         if (myId == "") {
             throw Exception("내 아이디 어디감")
@@ -42,7 +37,7 @@ class ChatroomRepositoryImpl @Inject constructor(
             throw Exception("상대 아이디 어디감")
         }
 
-        if (mChatroomStateCoroutineScope != null && mChatroomStateCoroutineScope != coroutineScope) return
+        if (mChatroomStateCoroutineScope != null) return
 
         if (mChatroomStateMyValueEventListener != null) {
             db
@@ -64,6 +59,11 @@ class ChatroomRepositoryImpl @Inject constructor(
                         .child(FIREBASE_SECOND_CHILD_CHATROOMS)
                         .updateChildren(mapOf(Pair(yourId, randomChatRoomId)))
                         .addOnSuccessListener {
+
+                            mChatroomStateOnSuccessListener = OnSuccessListener<Void> {
+                                onSuccess(randomChatRoomId)
+                            }
+
                             db
                                 .child(FIREBASE_FIRST_CHILD_USERS)
                                 .child(yourId)
@@ -79,59 +79,13 @@ class ChatroomRepositoryImpl @Inject constructor(
                                         Pair(yourId, "")
                                     )
                                 )
-
-                            val pWorker = object : UpdateChatroomWorker.Work {
-                                override fun doWork() {
-                                    val myChatroomData = ChatroomData(myId, randomChatRoomId)
-                                    val yourChatroomData = ChatroomData(yourId, randomChatRoomId)
-
-                                    val myReaderLogData = ReaderLogData(randomChatRoomId, myId, "9")
-                                    val yourReaderLogData = ReaderLogData(randomChatRoomId, yourId, "")
-
-                                    roomDB.apply {
-                                        getChatroomDataDao().insertChatRoom(myChatroomData)
-                                        getChatroomDataDao().insertChatRoom(yourChatroomData)
-                                        getReaderLogDataDao().insertReaderLog(myReaderLogData)
-                                        getReaderLogDataDao().insertReaderLog(yourReaderLogData)
-                                    }
-                                }
-                            }
-                            UpdateChatroomWorker.setWork(pWorker)
-                            val updateChatroomWorker = OneTimeWorkRequest
-                                .Builder(UpdateChatroomWorker::class.java)
-                                .build()
-
-                            workManager
-                                .beginWith(updateChatroomWorker)
-                                .enqueue()
-
-                            onSuccess(randomChatRoomId)
+                                .addOnSuccessListener(mChatroomStateOnSuccessListener!!)
                         }
                 } else {
                     val currentChatRoomId = snapshot.value.toString()
                     val insertTime = if (enter) "9" else time
 
-                    mChatroomStateYourEventSuccessListener = OnSuccessListener<Void> {
-                        val pWorker = object : UpdateChatroomWorker.Work {
-                            override fun doWork() {
-                                val myChatroomData = ChatroomData(myId, currentChatRoomId)
-                                val myReaderLogData = ReaderLogData(currentChatRoomId, myId, myId, insertTime)
-                                roomDB.apply {
-                                    getChatroomDataDao().insertChatRoom(myChatroomData)
-                                    getReaderLogDataDao().insertReaderLog(myReaderLogData)
-                                }
-                            }
-                        }
-
-                        UpdateChatroomWorker.setWork(pWorker)
-                        val updateChatroomWorker = OneTimeWorkRequest
-                            .Builder(UpdateChatroomWorker::class.java)
-                            .build()
-
-                        workManager
-                            .beginWith(updateChatroomWorker)
-                            .enqueue()
-
+                    mChatroomStateOnSuccessListener = OnSuccessListener<Void> {
                         onSuccess(currentChatRoomId)
                     }
 
@@ -140,7 +94,7 @@ class ChatroomRepositoryImpl @Inject constructor(
                         .child(currentChatRoomId)
                         .child(FIREBASE_SECOND_CHILD_READ_LOG)
                         .updateChildren(mapOf(Pair(myId, insertTime)))
-                        .addOnSuccessListener(mChatroomStateYourEventSuccessListener!!)
+                        .addOnSuccessListener(mChatroomStateOnSuccessListener!!)
                 }
             }
 
@@ -248,9 +202,7 @@ class ChatroomRepositoryImpl @Inject constructor(
             .addValueEventListener(mChatroomListFirebaseValueEventListener!!)
     }
 
-    override suspend fun fetchChatroomListFromRoom(
-        currentUserId: String
-    ): Flow<List<ChatroomDomain>> {
+    override suspend fun fetchChatroomListFromRoom(currentUserId: String): Flow<List<ChatroomDomain>> {
 
         return roomDB.getChatroomDataDao().fetchChatroomList(currentUserId)
             .map {
@@ -260,10 +212,56 @@ class ChatroomRepositoryImpl @Inject constructor(
             }
     }
 
+    override fun fetchReaderLogFromExternalDB(chatroomId: String, currentUserId: String, coroutineScope: CoroutineScope) {
+        if (mReaderLogValueEventListener != null && mReaderLogCoroutineScope == coroutineScope) return
+
+        if (mReaderLogValueEventListener != null) {
+            db
+                .child(FIREBASE_FIRST_CHILD_CHATS)
+                .child(chatroomId)
+                .child(FIREBASE_SECOND_CHILD_READ_LOG)
+                .removeEventListener(mReaderLogValueEventListener!!)
+        }
+
+        mReaderLogValueEventListener = object: ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                snapshot.children.forEach {
+                    val readerLogData = ReaderLogData(chatroomId, currentUserId, it.key!!, it.value!! as String)
+                    coroutineScope.launch(Dispatchers.IO) {
+                        roomDB.getReaderLogDataDao().insertReaderLog(readerLogData)
+                    }
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+            }
+
+        }
+
+        db
+            .child(FIREBASE_FIRST_CHILD_CHATS)
+            .child(chatroomId)
+            .child(FIREBASE_SECOND_CHILD_READ_LOG)
+            .addValueEventListener(mReaderLogValueEventListener!!)
+    }
+
     override suspend fun fetchReaderLogFromRoom(chatroomId: String): List<ChatroomDomain.ReaderLogDomain> {
         val readerLogDomainList = roomDB.getReaderLogDataDao().fetchReaderLogList(chatroomId)
             .map {
                 ChatroomDomain.ReaderLogDomain(userId = it.userId, readTime = it.readTime)
+            }
+        return readerLogDomainList
+    }
+
+    override suspend fun fetchReaderLogFromRoomAsFlow(chatroomId: String): Flow<List<ChatroomDomain.ReaderLogDomain>> {
+        val readerLogDomainList = roomDB.getReaderLogDataDao().fetchReaderLogListAsFlow(chatroomId)
+            .map {
+                val readerLogDataList = mutableListOf<ChatroomDomain.ReaderLogDomain>()
+                it.forEach {
+                    val readerLogDomain = ChatroomDomain.ReaderLogDomain(it.userId, it.readTime)
+                    readerLogDataList.add(readerLogDomain)
+                }
+                readerLogDataList
             }
         return readerLogDomainList
     }
@@ -275,7 +273,10 @@ class ChatroomRepositoryImpl @Inject constructor(
 
         private var mChatroomStateCoroutineScope: CoroutineScope? = null
         private var mChatroomStateMyValueEventListener: ValueEventListener? = null
-        private var mChatroomStateYourEventSuccessListener: OnSuccessListener<Void>? = null
+        private var mChatroomStateOnSuccessListener: OnSuccessListener<Void>? = null
+
+        private var mReaderLogCoroutineScope: CoroutineScope? = null
+        private var mReaderLogValueEventListener: ValueEventListener? = null
 
         private var mChatroomListFirebaseValueEventListener: ValueEventListener? = null
         private var mChatroomListCoroutineScope: CoroutineScope? = null
@@ -283,7 +284,10 @@ class ChatroomRepositoryImpl @Inject constructor(
         fun initializeOverlapCheck() {
             mChatroomStateCoroutineScope = null
             mChatroomStateMyValueEventListener = null
-            mChatroomStateYourEventSuccessListener = null
+            mChatroomStateOnSuccessListener = null
+
+            mReaderLogCoroutineScope = null
+            mReaderLogValueEventListener = null
 
             mChatroomListFirebaseValueEventListener = null
             mChatroomListCoroutineScope = null

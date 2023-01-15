@@ -17,8 +17,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.databinding.DataBindingUtil
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.chatappsample.R
@@ -37,6 +39,7 @@ import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textview.MaterialTextView
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.stateIn
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -146,6 +149,15 @@ class ChatActivity : AppCompatActivity() {
                 }
                 hideProgressBar()
             }
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                chatViewModel.fetchReaderLogFromExternalDB(chatRoomId, myId, this)
+                chatViewModel.fetchReaderLogAsFlow().stateIn(this).collect {
+                    withContext(Dispatchers.Main) { messageAdapter.setReaderLog(it) }
+                }
+            }
+        }
 
         // 리사이클러뷰에 데이터 추가
         messageAdapter = MessageAdapter(messageDomainList = listOf(), senderUID = myId)

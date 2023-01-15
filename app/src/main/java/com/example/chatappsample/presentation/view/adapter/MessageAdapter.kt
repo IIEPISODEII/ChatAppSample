@@ -15,6 +15,7 @@ import com.example.chatappsample.domain.dto.MessageDomain
 import com.example.chatappsample.util.convertSimpleDateFormatToTime
 import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.textview.MaterialTextView
+import java.text.SimpleDateFormat
 
 class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: String) :
     ListAdapter<MessageDomain, RecyclerView.ViewHolder>(MessageDiffUtil()) {
@@ -53,7 +54,17 @@ class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: 
             myMessageTextView.text = messageDomain.message
             myTimeTextView.text = convertSimpleDateFormatToTime(messageDomain.sentTime)[1]
 
-            val leftsToRead = readersLog.count { it.readTime.isEmpty() || it.readTime < messageDomain.sentTime }
+            val messageSentTimeInFormat = messageDomain.sentTime
+                .replace(" ", "")
+                .replace("-", "")
+                .replace(":", "")
+                .replace(".", "")
+                .dropLast(3)
+
+            println("readersLog: ${readersLog}")
+
+            val leftsToRead = readersLog.count { it.readTime.isEmpty() || it.readTime < messageSentTimeInFormat }
+
             if (leftsToRead == 0) {
                 myReadersTextView.visibility = View.INVISIBLE
             } else {
@@ -82,7 +93,14 @@ class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: 
             othersMessageTextView.text = messageDomain.message
             othersTimeTextView.text = convertSimpleDateFormatToTime(messageDomain.sentTime)[1]
 
-            val leftsToRead = readersLog.count { it.readTime.isEmpty() || it.readTime < messageDomain.sentTime }
+            val messageSentTimeInFormat = messageDomain.sentTime
+                .replace(" ", "")
+                .replace("-", "")
+                .replace(":", "")
+                .replace(".", "")
+                .dropLast(3)
+
+            val leftsToRead = readersLog.count { it.readTime.isEmpty() || it.readTime < messageSentTimeInFormat }
             if (leftsToRead == 0) {
                 othersReadersTextView.visibility = View.INVISIBLE
             } else {
@@ -120,7 +138,14 @@ class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: 
                 .into(myImageView)
             myTimeTextView.text = convertSimpleDateFormatToTime(messageDomain.sentTime)[1]
 
-            val leftsToRead = readersLog.count { it.readTime.isEmpty() || it.readTime < messageDomain.sentTime }
+            val messageSentTimeInFormat = messageDomain.sentTime
+                .replace(" ", "")
+                .replace("-", "")
+                .replace(":", "")
+                .replace(".", "")
+                .dropLast(3)
+
+            val leftsToRead = readersLog.count { it.readTime.isEmpty() || it.readTime < messageSentTimeInFormat }
             if (leftsToRead == 0) {
                 myReadersTextView.visibility = View.INVISIBLE
             } else {
@@ -155,7 +180,14 @@ class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: 
                 .into(othersImageView)
             othersTimeTextView.text = convertSimpleDateFormatToTime(messageDomain.sentTime)[1]
 
-            val leftsToRead = readersLog.count { it.readTime.isEmpty() || it.readTime < messageDomain.sentTime }
+            val messageSentTimeInFormat = messageDomain.sentTime
+                .replace(" ", "")
+                .replace("-", "")
+                .replace(":", "")
+                .replace(".", "")
+                .dropLast(3)
+
+            val leftsToRead = readersLog.count { it.readTime.isEmpty() || it.readTime < messageSentTimeInFormat }
             if (leftsToRead == 0) {
                 othersReadersTextView.visibility = View.INVISIBLE
             } else {
@@ -282,6 +314,7 @@ class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: 
     fun setReaderLog(list: List<ChatroomDomain.ReaderLogDomain>) {
         this.readersLog.clear()
         this.readersLog.addAll(list)
+        println("list - $readersLog")
         notifyDataSetChanged()
     }
 

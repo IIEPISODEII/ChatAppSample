@@ -133,7 +133,7 @@ class UserViewModel @Inject constructor(
     }
 
     fun updateChatRoom(myId: String, yourId: String, time: String, onSuccess: (String) -> Unit, onFail: () -> Unit, enter: Boolean) {
-        updateChatRoomUsecase(myId, yourId, time, onSuccess, onFail, enter, viewModelScope)
+        updateChatRoomUsecase(myId, yourId, time, onSuccess, onFail, enter)
     }
 
     fun fetchMessagesFromExternalDB(chatroom: String, coroutineScope: CoroutineScope) {

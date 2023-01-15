@@ -7,7 +7,7 @@ import javax.inject.Inject
 class UpdateChatroomUsecase @Inject constructor(
     private val repo: ChatroomRepository
 ) {
-    operator fun invoke(myId: String, yourId: String, time: String, onSuccess: (String) -> Unit, onFail: () -> Unit, enter: Boolean, coroutineScope: CoroutineScope) {
-        repo.updateChatroomState(myId, yourId, time, onSuccess, onFail, enter, coroutineScope)
+    operator fun invoke(myId: String, yourId: String, time: String, onSuccess: (String) -> Unit, onFail: () -> Unit, enter: Boolean) {
+        repo.updateChatroomState(myId, yourId, time, onSuccess, onFail, enter)
     }
 }

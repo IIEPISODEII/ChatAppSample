@@ -205,23 +205,6 @@ class UserRepositoryImpl @Inject constructor(
             lastTimeStamp = userDomain.lastTimeStamp
         )
 
-//        db
-//            .child(FIREBASE_FIRST_CHILD_USERS)
-//            .child(userData.uid)
-//            .setValue(userDomain)
-//            .addOnSuccessListener {
-//                if (changeProfileImage) {
-//                    val metadata = storageMetadata {
-//                        contentType = "image/jpeg"
-//                    }
-//
-//                    firebaseStorage.reference
-//                        .child(FIREBASE_FIRST_CHILD_PROFILEIMAGES + userDomain.uid)
-//                        .putFile(Uri.parse(userDomain.profileImage), metadata)
-//
-//                }
-//            }
-
         if (changeProfileImage) {
 
             val metadata = storageMetadata {

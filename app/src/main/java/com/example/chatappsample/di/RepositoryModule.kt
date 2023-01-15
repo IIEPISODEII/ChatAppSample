@@ -30,8 +30,7 @@ class RepositoryModule {
         firebaseDatabase: FirebaseDatabase,
         firebaseAuth: FirebaseAuth,
         firebaseStorage: FirebaseStorage,
-        userRoom: AppDatabase,
-        workManager: WorkManager
+        userRoom: AppDatabase
     ): UserRepository {
         return UserRepositoryImpl(
             firebaseDatabase,
@@ -45,13 +44,11 @@ class RepositoryModule {
     @Provides
     fun provideChatroomRepository(
         firebaseDatabase: FirebaseDatabase,
-        userRoom: AppDatabase,
-        workManager: WorkManager
+        userRoom: AppDatabase
     ): ChatroomRepository {
         return ChatroomRepositoryImpl(
             firebaseDatabase,
-            userRoom,
-            workManager
+            userRoom
         )
     }
 

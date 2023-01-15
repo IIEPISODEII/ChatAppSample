@@ -22,8 +22,7 @@ interface ChatroomRepository {
         time: String,
         onSuccess: (String) -> Unit,
         onFail: () -> Unit,
-        enter: Boolean,
-        coroutineScope: CoroutineScope
+        enter: Boolean
     )
 
     fun fetchChatroomListFromExternalDB(
@@ -35,7 +34,17 @@ interface ChatroomRepository {
         currentUserId: String
     ): Flow<List<ChatroomDomain>>
 
+    fun fetchReaderLogFromExternalDB(
+        chatroomId: String,
+        currentUserId: String,
+        coroutineScope: CoroutineScope
+    )
+
     suspend fun fetchReaderLogFromRoom(
         chatroomId: String
     ): List<ChatroomDomain.ReaderLogDomain>
+
+    suspend fun fetchReaderLogFromRoomAsFlow(
+        chatroomId: String
+    ): Flow<List<ChatroomDomain.ReaderLogDomain>>
 }

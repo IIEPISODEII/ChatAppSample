@@ -26,14 +26,10 @@ class FetchChatroomListFromRoomUsecase @Inject constructor(
             .map {
                 it.map { chatroomDomain ->
 
+
                     chatroomDomain.apply {
 
-                        val readerLogJob = withContext(Dispatchers.IO) {
-                            delay(100L)
-                            chatroomRepo.fetchReaderLogFromRoom(chatroomDomain.chatroomId)
-                        }
-
-                        this.readerLog = readerLogJob
+                        this.readerLog = withContext(Dispatchers.IO) { chatroomRepo.fetchReaderLogFromRoom(chatroomDomain.chatroomId) }
 
                         this.chatroomName = this.readerLog.filter { readerLog ->
                             readerLog.userId != currentUserId

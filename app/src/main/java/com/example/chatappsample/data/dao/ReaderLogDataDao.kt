@@ -13,4 +13,7 @@ interface ReaderLogDataDao {
 
     @Query("SELECT * FROM readerlog WHERE chatroomId = :targetChatroom")
     fun fetchReaderLogList(targetChatroom: String): List<ReaderLogData>
+
+    @Query("SELECT * FROM readerlog WHERE chatroomId = :targetChatroom")
+    fun fetchReaderLogListAsFlow(targetChatroom: String): Flow<List<ReaderLogData>>
 }
