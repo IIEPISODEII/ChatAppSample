@@ -18,7 +18,7 @@ class MainUserAdapter(var currentUserId: String, var userList: ArrayList<UserDom
 
         init {
             itemView.setOnClickListener { view ->
-                onChatRoomClickListener?.onChatRoomClick(view, adapterPosition)
+                onUserClickListener?.onUserClick(view, adapterPosition)
             }
         }
     }
@@ -33,24 +33,26 @@ class MainUserAdapter(var currentUserId: String, var userList: ArrayList<UserDom
 
         holder.userName.text = user.name
         Glide.with(holder.itemView.context)
-            .load(_userProfileImageList[user])
+            .load(_userProfileImageList[user.uid])
             .into(holder.userProfileImage)
     }
 
     override fun getItemCount(): Int = userList.size
 
-    private val _userProfileImageList = hashMapOf<UserDomain, ByteArray>()
-    fun addProfileImageByteArrayToList(user: UserDomain, byteArray: ByteArray) {
+    private val _userProfileImageList = hashMapOf<String, ByteArray>()
+    fun getUserProfileImageList() = _userProfileImageList
+
+    fun addProfileImageByteArrayToList(user: String, byteArray: ByteArray) {
         _userProfileImageList[user] = byteArray
     }
 
-    private var onChatRoomClickListener: ChatRoomClickListener? = null
+    private var onUserClickListener: UserClickListener? = null
 
-    interface ChatRoomClickListener {
-        fun onChatRoomClick(view: View, position: Int)
+    interface UserClickListener {
+        fun onUserClick(view: View, position: Int)
     }
 
-    fun setOnChatRoomClickListener(listener: ChatRoomClickListener) {
-        this.onChatRoomClickListener = listener
+    fun setOnUserClickListener(listener: UserClickListener) {
+        this.onUserClickListener = listener
     }
 }

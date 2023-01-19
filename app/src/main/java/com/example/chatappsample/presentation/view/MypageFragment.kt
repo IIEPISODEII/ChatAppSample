@@ -3,6 +3,7 @@ package com.example.chatappsample.presentation.view
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,6 +14,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.bumptech.glide.Glide
 import com.example.chatappsample.R
 import com.example.chatappsample.databinding.FragmentMyPageBinding
+import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
 import com.example.chatappsample.domain.dto.UserDomain
 import com.example.chatappsample.presentation.viewmodel.UserViewModel
 import com.example.chatappsample.util.CharLengthInputFilter
@@ -23,7 +25,6 @@ class MypageFragment : Fragment() {
 
     private val viewModel by lazy { ViewModelProvider(requireActivity())[UserViewModel::class.java] }
     private lateinit var mBinding: FragmentMyPageBinding
-    private var onGetUserProfileListener: OnGetUserProfileListener? = null
     private var myProfile: UserDomain? = UserDomain()
 
     override fun onCreateView(
@@ -35,17 +36,36 @@ class MypageFragment : Fragment() {
         mBinding.lifecycleOwner = this.viewLifecycleOwner
         mBinding.viewModel = viewModel
 
-        viewModel.currentUserDomain.observe(this.viewLifecycleOwner) {
-            if (it != null && myProfile?.profileImage != it.profileImage) {
-                Glide
-                    .with(requireContext())
-                    .load(it.profileImage)
-                    .centerCrop()
-                    .into(mBinding.ivMyPageUserProfileImage)
-            }
+        return mBinding.root
+    }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        viewModel.currentUserDomain.observe(this@MypageFragment.requireActivity()) {
+            if (it == null) return@observe
             myProfile = it
+
+            viewModel.downloadProfileImage(it.uid, object: OnFileDownloadListener {
+                override fun onSuccess(byteArray: ByteArray) {
+                    Glide
+                        .with(this@MypageFragment.requireActivity())
+                        .load(byteArray)
+                        .centerCrop()
+                        .into(mBinding.ivMyPageUserProfileImage)
+                }
+
+                override fun onFail(e: Exception) {
+                    Glide
+                        .with(this@MypageFragment.requireActivity())
+                        .load(R.drawable.ic_baseline_person_24)
+                        .centerCrop()
+                        .into(mBinding.ivMyPageUserProfileImage)
+                    Log.e("Download Profile", e.message ?: "")
+                }
+            })
         }
+
         viewModel.isProfileEditMode.observe(this.viewLifecycleOwner) {
             mBinding.tvMyPageUserProfileNameRules.visibility = if (it) View.VISIBLE else View.INVISIBLE
         }
@@ -95,20 +115,5 @@ class MypageFragment : Fragment() {
             startActivity(Intent(requireActivity(), SignInActivity::class.java))
             requireActivity().finish()
         }
-
-        return mBinding.root
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        onGetUserProfileListener?.setOnGetUserProfileListener(mBinding.ivMyPageUserProfileImage)
-    }
-
-    interface OnGetUserProfileListener {
-        fun setOnGetUserProfileListener(imageView: ShapeableImageView)
-    }
-
-    fun setOnGetUserProfile(listener: OnGetUserProfileListener) {
-        this.onGetUserProfileListener = listener
     }
 }

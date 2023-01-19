@@ -5,7 +5,6 @@ import android.util.Log
 import com.example.chatappsample.data.entity.UserData
 import com.example.chatappsample.domain.`interface`.*
 import com.example.chatappsample.domain.dto.UserDomain
-import com.example.chatappsample.domain.repository.ChatroomRepository
 import com.example.chatappsample.domain.repository.UserRepository
 import com.example.chatappsample.util.TEN_MEGABYTE
 import com.google.firebase.auth.FirebaseAuth
@@ -15,7 +14,9 @@ import com.google.firebase.storage.ktx.storageMetadata
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -28,43 +29,10 @@ class UserRepositoryImpl @Inject constructor(
 
     private val db = firebaseDatabase.reference
 
-    private var isUserFetched = false
-    private var mCurrentUserFetchValueEventListener: ValueEventListener? = null
-
-    override fun fetchCurrentUser(listener: OnGetDataListener) {
-        if (isUserFetched) return
-
-        val firebaseUserId = firebaseAuth.currentUser?.uid ?: "NO ID"
-
-        if (mCurrentUserFetchValueEventListener != null) {
-            db
-                .child(FIREBASE_FIRST_CHILD_USERS)
-                .child(firebaseUserId)
-                .removeEventListener(mCurrentUserFetchValueEventListener!!)
-        }
-
-        isUserFetched = true
-        mCurrentUserFetchValueEventListener = object: ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                listener.onSuccess(snapshot)
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                listener.onFailure(error)
-            }
-        }
-
-        db
-            .child(FIREBASE_FIRST_CHILD_USERS)
-            .child(firebaseUserId)
-            .addValueEventListener(mCurrentUserFetchValueEventListener!!)
-    }
-
-    private fun insertUser(userData: UserData) = roomDB.getUserDao().insertUser(userData)
-
     private var mUserListFirebaseChildEventListener: ChildEventListener? = null
     private var mUserListCoroutine: CoroutineScope? = null
 
+    var i =0
     override fun fetchUserListFromExternalDB(coroutineScope: CoroutineScope) {
         if (mUserListCoroutine != null && mUserListCoroutine == coroutineScope) return
 
@@ -78,11 +46,13 @@ class UserRepositoryImpl @Inject constructor(
 
         mUserListFirebaseChildEventListener = object: ChildEventListener {
             override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
-                coroutineScope.launch(Dispatchers.IO) { insertUser(snapshot.getValue(UserData::class.java)!!) }
+                coroutineScope.launch(Dispatchers.IO) { roomDB.getUserDao().insertUser(snapshot.getValue(UserData::class.java)!!) }
+                println("외부 데이터 유저 추가: $snapshot")
             }
 
             override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
-                coroutineScope.launch(Dispatchers.IO) { insertUser(snapshot.getValue(UserData::class.java)!!) }
+                coroutineScope.launch(Dispatchers.IO) { roomDB.getUserDao().updateUser(snapshot.getValue(UserData::class.java)!!) }
+                println("외부 데이터 유저 변경: $snapshot")
             }
 
             override fun onChildRemoved(snapshot: DataSnapshot) {
@@ -126,7 +96,6 @@ class UserRepositoryImpl @Inject constructor(
     override fun signOut(): Boolean {
         firebaseAuth.signOut()
 
-        isUserFetched = false
         isProfileImageDownloaded = false
         mUserListCoroutine = null
         mUserListFirebaseChildEventListener = null
@@ -206,6 +175,7 @@ class UserRepositoryImpl @Inject constructor(
         )
 
         if (changeProfileImage) {
+            isProfileImageDownloaded = false
 
             val metadata = storageMetadata {
                 contentType = "image/jpeg"
@@ -216,12 +186,11 @@ class UserRepositoryImpl @Inject constructor(
                 .child(FIREBASE_FIRST_CHILD_PROFILEIMAGES + userData.uid)
                 .putFile(Uri.parse(userData.profileImage), metadata)
                 .addOnCompleteListener { task ->
+                    userData.profileImage = task.result.uploadSessionUri.toString()
                     db
                         .child(FIREBASE_FIRST_CHILD_USERS)
                         .child(userData.uid)
-                        .setValue(userData.apply {
-                            this.profileImage = task.result.uploadSessionUri.toString()
-                        })
+                        .setValue(userData)
                 }
         } else {
             db
@@ -237,7 +206,6 @@ class UserRepositoryImpl @Inject constructor(
         userID: String,
         onFileDownloadListener: OnFileDownloadListener
     ) {
-        if (isProfileImageDownloaded) return
         isProfileImageDownloaded = true
 
         firebaseStorage.reference
@@ -247,13 +215,21 @@ class UserRepositoryImpl @Inject constructor(
                 onFileDownloadListener.onSuccess(it)
             }
             .addOnFailureListener {
-                onFileDownloadListener.onFailure(it)
+                onFileDownloadListener.onFail(it)
             }
     }
 
     override suspend fun fetchUserById(uid: String): UserDomain {
         val userData = roomDB.getUserDao().fetchUserById(uid) ?: return UserDomain()
         return UserDomain(name = userData.name, email = userData.email, uid = userData.uid, profileImage = userData.profileImage, lastTimeStamp = userData.lastTimeStamp)
+    }
+
+    override fun fetchUserByIdAsFlow(uid: String): Flow<UserDomain> {
+
+        return roomDB.getUserDao().fetchUserByIdAsFlow(uid).map {
+            val userData = it ?: UserData()
+            UserDomain(userData.name, userData.email, userData.uid, userData.profileImage, userData.lastTimeStamp)
+        }
     }
 
     companion object {

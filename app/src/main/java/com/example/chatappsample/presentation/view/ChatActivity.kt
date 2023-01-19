@@ -96,7 +96,7 @@ class ChatActivity : AppCompatActivity() {
                     messageAdapter.setImageProfileUri(byteArray)
                 }
 
-                override fun onFailure(e: Exception) {
+                override fun onFail(e: Exception) {
                     e.printStackTrace()
                 }
             })
@@ -209,7 +209,7 @@ class ChatActivity : AppCompatActivity() {
                                 messageAdapter.notifyItemChanged(i)
                             }
 
-                            override fun onFailure(e: Exception) {
+                            override fun onFail(e: Exception) {
                                 e.printStackTrace()
                             }
                         }
@@ -226,7 +226,7 @@ class ChatActivity : AppCompatActivity() {
                                 messageAdapter.notifyItemChanged(messageList.lastIndex)
                             }
 
-                            override fun onFailure(e: Exception) {
+                            override fun onFail(e: Exception) {
                                 e.printStackTrace()
                             }
                         }

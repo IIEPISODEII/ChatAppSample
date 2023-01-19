@@ -9,10 +9,7 @@ import androidx.appcompat.content.res.AppCompatResources
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.*
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.bumptech.glide.Glide
 import com.example.chatappsample.R
@@ -21,6 +18,7 @@ import com.example.chatappsample.databinding.ActivityMainBinding
 import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
 import com.example.chatappsample.domain.dto.UserDomain
 import com.example.chatappsample.presentation.viewmodel.UserViewModel
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
@@ -60,7 +58,7 @@ class MainActivity : FragmentActivity() {
 
         lifecycleScope.launch(Dispatchers.IO) {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.setCurrentUserIdAndFetchChatroomList(currentUserId, this)
+                viewModel.setCurrentUserAndFetchChatroomList(currentUserId, this)
             }
         }
 
@@ -68,31 +66,6 @@ class MainActivity : FragmentActivity() {
         mBinding.viewModel = this@MainActivity.viewModel
         mBinding.lifecycleOwner = this@MainActivity
 
-        viewModel.currentUserDomain.observe(this) {
-            if (it != null && currentUserDomain?.profileImage != it.profileImage) {
-                viewModel.downloadProfileImage(it, object: OnFileDownloadListener {
-
-                    override fun onSuccess(byteArray: ByteArray) {
-                        mypageFragment.setOnGetUserProfile(object: MypageFragment.OnGetUserProfileListener {
-                            override fun setOnGetUserProfileListener(imageView: ShapeableImageView) {
-                                Glide
-                                    .with(this@MainActivity)
-                                    .load(byteArray)
-                                    .into(imageView)
-                            }
-                        })
-                    }
-
-                    override fun onFailure(e: Exception) {
-
-                    }
-                })
-            }
-
-            if (it != null) currentUserDomain = it
-        }
-
-        mBinding.viewModel!!.fetchCurrentUserInformation()
         mBinding.viewModel!!.fetchUserListFromExternalDB()
 
         mBinding.viewpager2Main.adapter = mainPagerAdapter

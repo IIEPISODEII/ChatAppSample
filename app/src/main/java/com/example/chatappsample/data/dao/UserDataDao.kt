@@ -6,8 +6,11 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface UserDataDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insertUser(userEntity: UserData)
+
+    @Update
+    fun updateUser(userEntity: UserData)
 
     @Delete
     fun deleteUser(userEntity: UserData)
@@ -17,4 +20,7 @@ interface UserDataDao {
 
     @Query("SELECT * FROM users WHERE uid = :userId")
     fun fetchUserById(userId: String): UserData?
+
+    @Query("SELECT * FROM users WHERE uid = :userId")
+    fun fetchUserByIdAsFlow(userId: String): Flow<UserData?>
 }

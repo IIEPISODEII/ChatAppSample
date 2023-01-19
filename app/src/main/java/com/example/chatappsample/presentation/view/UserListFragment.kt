@@ -7,10 +7,12 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.bumptech.glide.Glide
 import com.example.chatappsample.R
 import com.example.chatappsample.databinding.FragmentUserListBinding
 import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
@@ -19,10 +21,15 @@ import com.example.chatappsample.presentation.view.adapter.MainUserAdapter
 import com.example.chatappsample.presentation.viewmodel.ChatViewModel
 import com.example.chatappsample.presentation.viewmodel.UserViewModel
 import com.example.chatappsample.util.COERCE_DATE_FORMAT
-import kotlinx.coroutines.*
+import com.example.chatappsample.util.convertDPtoPX
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.card.MaterialCardView
+import com.google.android.material.imageview.ShapeableImageView
+import com.google.android.material.textview.MaterialTextView
+import java.lang.NullPointerException
+import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
-import java.text.SimpleDateFormat
 
 class UserListFragment : Fragment() {
 
@@ -49,7 +56,6 @@ class UserListFragment : Fragment() {
 
         // Initialize recyclerview
         rvAdapter = MainUserAdapter(currentUserId = currentUserId, userList = userList)
-        binding.viewModel!!.fetchCurrentUserInformation()
         binding.viewModel!!.currentUserDomain.observe(viewLifecycleOwner) {
             currentUserId = it?.uid ?: ""
             rvAdapter.currentUserId = currentUserId
@@ -61,13 +67,13 @@ class UserListFragment : Fragment() {
             rvAdapter.userList = userDomainList
             rvAdapter.userList.forEachIndexed { index, user ->
                 if (user.profileImage.isNotEmpty()) {
-                    viewModel.downloadProfileImage(user, object : OnFileDownloadListener {
+                    viewModel.downloadProfileImage(user.uid, object : OnFileDownloadListener {
                         override fun onSuccess(byteArray: ByteArray) {
-                            rvAdapter.addProfileImageByteArrayToList(user, byteArray)
+                            rvAdapter.addProfileImageByteArrayToList(user.uid, byteArray)
                             rvAdapter.notifyItemChanged(index)
                         }
 
-                        override fun onFailure(e: Exception) {
+                        override fun onFail(e: Exception) {
                             e.printStackTrace()
                         }
                     })
@@ -77,9 +83,53 @@ class UserListFragment : Fragment() {
 
         }
 
-        rvAdapter.setOnChatRoomClickListener(object : MainUserAdapter.ChatRoomClickListener {
-            override fun onChatRoomClick(view: View, position: Int) {
+        val bottomSheetView = layoutInflater.inflate(R.layout.dialog_main_user_click, null)
+        val bottomSheetDialog = BottomSheetDialog(this@UserListFragment.requireActivity())
+        bottomSheetDialog.behavior.expandedOffset = 30
 
+        val dialogProfileImageView = bottomSheetView.findViewById<ShapeableImageView>(R.id.iv_dialog_main_user_profile_image)
+        val dialogNameTextView = bottomSheetView.findViewById<MaterialTextView>(R.id.tv_dialog_main_user_profile_name)
+        val dialogChatButton = bottomSheetView.findViewById<MaterialCardView>(R.id.cv_dialog_main_user_chat)
+
+        rvAdapter.setOnUserClickListener(object : MainUserAdapter.UserClickListener {
+            override fun onUserClick(view: View, position: Int) {
+
+                val yourId = rvAdapter.userList[position].uid
+                Glide.with(this@UserListFragment)
+                    .load(rvAdapter.getUserProfileImageList()[yourId])
+                    .placeholder(R.drawable.ic_baseline_person_24)
+                    .error(R.drawable.ic_baseline_person_24)
+                    .into(dialogProfileImageView)
+
+                dialogNameTextView.text = rvAdapter.userList[position].name
+                dialogChatButton.setOnClickListener {
+                    viewModel.updateChatRoom(
+                        currentUserId,
+                        yourId,
+                        SimpleDateFormat(
+                            COERCE_DATE_FORMAT,
+                            Locale.KOREA
+                        ).format(Date(System.currentTimeMillis())),
+                        onSuccess = {
+                            val chatIntent = Intent(requireContext(), ChatActivity::class.java).apply {
+                                putExtra(ChatActivity.YOUR_ID, yourId)
+                                putExtra(ChatActivity.CURRENT_UID, viewModel.currentUser())
+                            }
+                            bottomSheetDialog.dismiss()
+                            ChatViewModel.setReceiverRoom(it)
+                            chatIntent.putExtra(ChatActivity.CHATROOM_ID, it)
+                            if (context == null) {
+                                throw NullPointerException("Fragment is not attached on context.")
+                            }
+                            requireContext().startActivity(chatIntent)
+                        },
+                        onFail = {},
+                        enter = true
+                    )
+                }
+
+                bottomSheetDialog.setContentView(bottomSheetView)
+                bottomSheetDialog.show()
             }
         })
         binding.rvMainUserRecyclerview.layoutManager = LinearLayoutManager(requireContext())

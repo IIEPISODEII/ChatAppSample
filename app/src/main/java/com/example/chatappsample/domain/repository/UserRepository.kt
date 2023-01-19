@@ -6,12 +6,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 
 interface UserRepository {
-    /** 내 유저 정보 가져오기
-     * @param listener 정보를 가져올 경우 콜백 등록
-     * **/
-    fun fetchCurrentUser(
-        listener: OnGetDataListener
-    )
 
     fun fetchUserListFromExternalDB(
         coroutineScope: CoroutineScope
@@ -67,4 +61,6 @@ interface UserRepository {
     )
 
     suspend fun fetchUserById(uid: String): UserDomain
+
+    fun fetchUserByIdAsFlow(uid: String): Flow<UserDomain>
 }

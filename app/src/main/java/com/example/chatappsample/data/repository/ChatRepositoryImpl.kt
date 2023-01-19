@@ -176,7 +176,7 @@ class ChatRepositoryImpl @Inject constructor(
                 onFileDownloadListener.onSuccess(it)
             }
             .addOnFailureListener {
-                onFileDownloadListener.onFailure(it)
+                onFileDownloadListener.onFail(it)
                 it.printStackTrace()
             }
     }
