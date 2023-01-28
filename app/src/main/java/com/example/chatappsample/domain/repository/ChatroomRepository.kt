@@ -25,26 +25,26 @@ interface ChatroomRepository {
         enter: Boolean
     )
 
-    fun fetchChatroomListFromExternalDB(
+    fun fetchChatroomListFromRemoteDB(
         currentUserId: String,
         coroutineScope: CoroutineScope
     )
 
-    suspend fun fetchChatroomListFromRoom(
+    suspend fun fetchChatroomListFromLocalDB(
         currentUserId: String
     ): Flow<List<ChatroomDomain>>
 
-    fun fetchReaderLogFromExternalDB(
+    fun fetchReaderLogFromRemoteDB(
         chatroomId: String,
         currentUserId: String,
         coroutineScope: CoroutineScope
     )
 
-    suspend fun fetchReaderLogFromRoom(
+    suspend fun fetchReaderLogFromLocalDB(
         chatroomId: String
     ): List<ChatroomDomain.ReaderLogDomain>
 
-    suspend fun fetchReaderLogFromRoomAsFlow(
+    suspend fun fetchReaderLogFromLocalDBAsFlow(
         chatroomId: String
     ): Flow<List<ChatroomDomain.ReaderLogDomain>>
 }

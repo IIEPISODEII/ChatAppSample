@@ -5,7 +5,7 @@ import javax.inject.Inject
 
 class SignOutUsecase @Inject constructor(private val userRepository: UserRepository) {
 
-    fun signOut() : Boolean {
+    operator fun invoke() : Boolean {
         return userRepository.signOut()
     }
 }

@@ -8,10 +8,8 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.example.chatappsample.R
-import com.example.chatappsample.domain.`interface`.OnSendEmailVerificationListener
+import com.example.chatappsample.domain.`interface`.EmailVerificationSendListener
 import com.example.chatappsample.presentation.viewmodel.UserViewModel
-import com.example.chatappsample.util.CharLengthInputFilter
-import com.example.chatappsample.util.LetterDigitsInputFilter
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textview.MaterialTextView
@@ -89,7 +87,7 @@ class SignUpFragment : Fragment() {
         }
     }
 
-    private val sendVerificationEmailListener = object: OnSendEmailVerificationListener {
+    private val sendVerificationEmailListener = object: EmailVerificationSendListener {
         override fun onSuccess() {
             Toast.makeText(this@SignUpFragment.requireActivity(), "이메일 주소로 인증메일을 보냈습니다.", Toast.LENGTH_SHORT).show()
             this@SignUpFragment.requireActivity()

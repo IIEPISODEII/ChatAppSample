@@ -4,7 +4,7 @@ import com.example.chatappsample.domain.repository.UserRepository
 import kotlinx.coroutines.CoroutineScope
 import javax.inject.Inject
 
-class FetchUserListFromExternalDBUsecase @Inject constructor(private val userRepository: UserRepository) {
+class FetchUserListFromRemoteDBUsecase @Inject constructor(private val userRepository: UserRepository) {
 
     operator fun invoke(coroutineScope: CoroutineScope) {
         userRepository.fetchUserListFromExternalDB(coroutineScope)

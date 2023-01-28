@@ -15,7 +15,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.App.RoundCorner"/>
+        app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.App.Circle"/>
 
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/tv_main_chatroom_last_chatting"

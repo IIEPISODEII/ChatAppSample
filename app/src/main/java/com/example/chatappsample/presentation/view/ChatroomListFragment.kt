@@ -24,6 +24,7 @@ import com.example.chatappsample.presentation.viewmodel.UserViewModel
 import com.example.chatappsample.util.COERCE_DATE_FORMAT
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.stateIn
 import java.lang.NullPointerException
 import java.util.*
 import kotlin.collections.ArrayList
@@ -54,20 +55,20 @@ class ChatroomListFragment : Fragment() {
 
         // Initialize recyclerview
         rvAdapter = MainChatroomAdapter(
-            currentUserId = viewModel.currentUser(),
+            currentUserId = UserViewModel.currentUserId(),
             chatroomDomainList = chatroomDomainList
         )
         binding!!.rvMainChatroomRecyclerview.adapter = rvAdapter
 
         lifecycleScope.launch(Dispatchers.IO) {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                binding!!.viewModel!!.chatroomList.collectLatest {
+                viewModel.fetchChatroomList().stateIn(this).collectLatest {
                     if (it.isEmpty()) return@collectLatest
 
                     val chatroomList = it as ArrayList<ChatroomDomain>
                     rvAdapter.chatroomDomainList = chatroomList
                     rvAdapter.chatroomDomainList.forEachIndexed { idx, chatroom ->
-                        viewModel.fetchMessagesFromExternalDB(chatroom.chatroomId, this)
+                        viewModel.fetchMessagesFromRemoteDB(chatroom.chatroomId, this)
                         viewModel.fetchLastMessage(chatroom).collectLatest { message ->
 
                             withContext(Dispatchers.Main) {
@@ -85,13 +86,12 @@ class ChatroomListFragment : Fragment() {
             override fun onChatRoomClick(view: View, position: Int) {
                 showProgressbar()
                 val chatroom = rvAdapter.chatroomDomainList[position]
-                val yourId = chatroom.readerLog.filter { it.userId != viewModel.currentUser() }[0].userId
+                val yourId = chatroom.readerLog.filter { it.userId != UserViewModel.currentUserId() }[0].userId
                 val intent = Intent(requireContext(), ChatActivity::class.java).apply {
                     putExtra(ChatActivity.YOUR_ID, yourId)
-                    putExtra(ChatActivity.CURRENT_UID, viewModel.currentUser())
+                    putExtra(ChatActivity.CURRENT_UID, UserViewModel.currentUserId())
                 }
                 viewModel.updateChatRoom(
-                    viewModel.currentUser(),
                     yourId,
                     SimpleDateFormat(
                         COERCE_DATE_FORMAT,

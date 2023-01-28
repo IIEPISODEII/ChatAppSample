@@ -6,7 +6,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.chatappsample.R
 import com.example.chatappsample.domain.repository.SharedPreferenceRepository
-import com.example.chatappsample.presentation.view.MainActivity.Companion.CURRENT_USER
+import com.example.chatappsample.presentation.viewmodel.UserViewModel
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -30,10 +30,9 @@ class SplashActivity: AppCompatActivity() {
             FirebaseAuth.getInstance().signInWithEmailAndPassword(mEmail, mPassword)
                 .addOnCompleteListener(this) { task ->
                     if (task.isSuccessful) {
+                        UserViewModel.setCurrentUserId(task.result.user!!.uid)
                         finish()
-                        val intent = Intent(this@SplashActivity, MainActivity::class.java).apply {
-                            putExtra(CURRENT_USER, task.result.user!!.uid)
-                        }
+                        val intent = Intent(this@SplashActivity, MainActivity::class.java)
                         startActivity(intent)
                     } else {
                         Toast.makeText(this@SplashActivity, "로그인에 실패했습니다.", Toast.LENGTH_SHORT).show()

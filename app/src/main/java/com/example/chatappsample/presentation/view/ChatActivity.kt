@@ -6,9 +6,7 @@ import android.content.ClipboardManager
 import android.content.Intent
 import android.os.*
 import android.view.*
-import android.view.animation.Animation
 import android.view.animation.AnimationUtils
-import android.view.animation.Transformation
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
@@ -25,11 +23,12 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.chatappsample.R
 import com.example.chatappsample.databinding.ActivityChatBinding
-import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
-import com.example.chatappsample.domain.`interface`.OnFirebaseCommunicationListener
+import com.example.chatappsample.domain.`interface`.FileDownloadListener
+import com.example.chatappsample.domain.`interface`.FileUploadListener
 import com.example.chatappsample.domain.dto.MessageDomain
 import com.example.chatappsample.presentation.view.adapter.MessageAdapter
 import com.example.chatappsample.presentation.viewmodel.ChatViewModel
+import com.example.chatappsample.presentation.viewmodel.UserViewModel
 import com.example.chatappsample.util.COERCE_DATE_FORMAT
 import com.example.chatappsample.util.FULL_DATE_FORMAT
 import com.google.android.material.appbar.MaterialToolbar
@@ -65,7 +64,6 @@ class ChatActivity : AppCompatActivity() {
     private var messageText = ""
     private var isLoading = false
 
-    private var myId = ""
     private var yourId = ""
     private var chatRoomId = ""
 
@@ -83,15 +81,13 @@ class ChatActivity : AppCompatActivity() {
         toolbarTitleTextView.text = intent.getStringExtra(YOUR_NAME)
         toolbarHomeButton.setOnClickListener { finish() }
         toolbarMenuButton.setOnClickListener { openDrawer() }
-
-        myId = intent.getStringExtra(CURRENT_UID) ?: ""
         yourId = intent.getStringExtra(YOUR_ID) ?: ""
         chatRoomId = intent.getStringExtra(CHATROOM_ID)!!
 
         // 뷰모델 기본 리스너 설정
         chatViewModel.run {
             messageTxt.observe(this@ChatActivity) { messageText = it }
-            downloadProfileImage(yourId, object: OnFileDownloadListener {
+            downloadProfileImage(yourId, object: FileDownloadListener {
                 override fun onSuccess(byteArray: ByteArray) {
                     messageAdapter.setImageProfileUri(byteArray)
                 }
@@ -119,7 +115,7 @@ class ChatActivity : AppCompatActivity() {
                             messageId = sdf+UUID.randomUUID().toString(),
                             messageType = MessageDomain.TYPE_IMAGE,
                             message = selectedImageUri.toString(),
-                            senderId = myId,
+                            senderId = UserViewModel.currentUserId(),
                             sentTime = sdf
                         )
                         lifecycleScope.launch(Dispatchers.IO) {
@@ -134,7 +130,7 @@ class ChatActivity : AppCompatActivity() {
                                         messageId = sdf+UUID.randomUUID().toString(),
                                         messageType = MessageDomain.TYPE_IMAGE,
                                         message = selectedImageUri.toString(),
-                                        senderId = myId,
+                                        senderId = UserViewModel.currentUserId(),
                                         sentTime = sdf
                                     )
                                     chatViewModel.uploadFile(
@@ -152,7 +148,7 @@ class ChatActivity : AppCompatActivity() {
 
         lifecycleScope.launch(Dispatchers.IO) {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                chatViewModel.fetchReaderLogFromExternalDB(chatRoomId, myId, this)
+                chatViewModel.fetchReaderLogFromRemoteDB(chatRoomId, this)
                 chatViewModel.fetchReaderLogAsFlow().stateIn(this).collect {
                     withContext(Dispatchers.Main) { messageAdapter.setReaderLog(it) }
                 }
@@ -160,7 +156,7 @@ class ChatActivity : AppCompatActivity() {
         }
 
         // 리사이클러뷰에 데이터 추가
-        messageAdapter = MessageAdapter(messageDomainList = listOf(), senderUID = myId)
+        messageAdapter = MessageAdapter(messageDomainList = listOf(), senderUID = UserViewModel.currentUserId())
         val llm = LinearLayoutManager(this@ChatActivity)
         chattingRecyclerView.apply {
             adapter = messageAdapter
@@ -203,7 +199,7 @@ class ChatActivity : AppCompatActivity() {
                     if (currMessage.messageType == MessageDomain.TYPE_NORMAL_TEXT) continue
                     chatViewModel.downloadFile(
                         currMessage,
-                        object : OnFileDownloadListener {
+                        object : FileDownloadListener {
                             override fun onSuccess(byteArray: ByteArray) {
                                 messageAdapter.addImageUriToList(i, byteArray)
                                 messageAdapter.notifyItemChanged(i)
@@ -220,7 +216,7 @@ class ChatActivity : AppCompatActivity() {
                 if (currMessage.messageType != MessageDomain.TYPE_NORMAL_TEXT) {
                     chatViewModel.downloadFile(
                         currMessage,
-                        object : OnFileDownloadListener {
+                        object : FileDownloadListener {
                             override fun onSuccess(byteArray: ByteArray) {
                                 messageAdapter.addImageUriToList(messageList.lastIndex, byteArray)
                                 messageAdapter.notifyItemChanged(messageList.lastIndex)
@@ -233,7 +229,7 @@ class ChatActivity : AppCompatActivity() {
                     )
                 }
 
-                if (messageList.last().senderId == myId) {
+                if (messageList.last().senderId == UserViewModel.currentUserId()) {
                     chattingRecyclerView.layoutManager?.scrollToPosition(messageAdapter.messageDomainList.lastIndex+1)
                 }
             }
@@ -271,7 +267,7 @@ class ChatActivity : AppCompatActivity() {
                 messageId = sdf+UUID.randomUUID().toString(),
                 messageType = MessageDomain.TYPE_NORMAL_TEXT,
                 message = messageText,
-                senderId = myId,
+                senderId = UserViewModel.currentUserId(),
                 sentTime = sdf
             )
 
@@ -279,7 +275,7 @@ class ChatActivity : AppCompatActivity() {
                 chatViewModel.sendMessage(
                     message = messageDomainObject,
                     chatRoom = chatRoomId,
-                    onFirebaseCommunicationListener = onMessageSendListener
+                    fileUploadListener = onMessageSendListener
                 )
             }
             messageBox.setText("")
@@ -313,7 +309,7 @@ class ChatActivity : AppCompatActivity() {
                 if (layoutManager.findFirstCompletelyVisibleItemPosition() <= 1) {
                     isLoading = true
                     lifecycleScope.launch(Dispatchers.IO) {
-                        chatViewModel.fetchMessagesFromRoomDB(chatRoom = chatRoomId)
+                        chatViewModel.fetchMessagesFromLocalDB(chatRoom = chatRoomId)
                         isLoading = false
                     }
                 }
@@ -324,7 +320,6 @@ class ChatActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         chatViewModel.updateChatRoom(
-            myId,
             yourId,
             SimpleDateFormat(
                 COERCE_DATE_FORMAT,
@@ -340,7 +335,6 @@ class ChatActivity : AppCompatActivity() {
         super.onStop()
 
         chatViewModel.updateChatRoom(
-            myId,
             yourId,
             SimpleDateFormat(
                 COERCE_DATE_FORMAT,
@@ -375,7 +369,7 @@ class ChatActivity : AppCompatActivity() {
         imm.hideSoftInputFromWindow(this.currentFocus?.windowToken, 0)
     }
 
-    private val onMessageSendListener = object: OnFirebaseCommunicationListener {
+    private val onMessageSendListener = object: FileUploadListener {
         override fun onSuccess() {
             hideProgressBar()
             sendMessageButton.isEnabled = true
@@ -388,7 +382,7 @@ class ChatActivity : AppCompatActivity() {
         }
     }
 
-    private val onImageSendListener = object: OnFirebaseCommunicationListener {
+    private val onImageSendListener = object: FileUploadListener {
         override fun onSuccess() {
             hideProgressBar()
             sendMessageButton.isEnabled = true

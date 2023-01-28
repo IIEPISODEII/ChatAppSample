@@ -14,7 +14,6 @@ import com.google.firebase.storage.ktx.storageMetadata
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -32,7 +31,6 @@ class UserRepositoryImpl @Inject constructor(
     private var mUserListFirebaseChildEventListener: ChildEventListener? = null
     private var mUserListCoroutine: CoroutineScope? = null
 
-    var i =0
     override fun fetchUserListFromExternalDB(coroutineScope: CoroutineScope) {
         if (mUserListCoroutine != null && mUserListCoroutine == coroutineScope) return
 
@@ -47,12 +45,10 @@ class UserRepositoryImpl @Inject constructor(
         mUserListFirebaseChildEventListener = object: ChildEventListener {
             override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
                 coroutineScope.launch(Dispatchers.IO) { roomDB.getUserDao().insertUser(snapshot.getValue(UserData::class.java)!!) }
-                println("외부 데이터 유저 추가: $snapshot")
             }
 
             override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
                 coroutineScope.launch(Dispatchers.IO) { roomDB.getUserDao().updateUser(snapshot.getValue(UserData::class.java)!!) }
-                println("외부 데이터 유저 변경: $snapshot")
             }
 
             override fun onChildRemoved(snapshot: DataSnapshot) {
@@ -73,7 +69,7 @@ class UserRepositoryImpl @Inject constructor(
 
     }
 
-    override suspend fun fetchUserListFromRoomDB(): Flow<List<UserDomain>> {
+    override suspend fun fetchUserListFromLocalDB(): Flow<List<UserDomain>> {
         return roomDB
             .getUserDao()
             .fetchUserList()
@@ -82,7 +78,7 @@ class UserRepositoryImpl @Inject constructor(
             }
     }
 
-    override fun signIn(email: String, password: String, listener: OnSignInListener) {
+    override fun signIn(email: String, password: String, listener: SignInListener) {
         firebaseAuth
             .signInWithEmailAndPassword(email, password)
             .addOnSuccessListener {
@@ -96,7 +92,6 @@ class UserRepositoryImpl @Inject constructor(
     override fun signOut(): Boolean {
         firebaseAuth.signOut()
 
-        isProfileImageDownloaded = false
         mUserListCoroutine = null
         mUserListFirebaseChildEventListener = null
 
@@ -110,7 +105,7 @@ class UserRepositoryImpl @Inject constructor(
     override fun sendVerificationEmail(
         email: String,
         password: String,
-        listener: OnSendEmailVerificationListener
+        listener: EmailVerificationSendListener
     ) {
         listener.onStart()
 
@@ -134,7 +129,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     private var reloadCnt = 0
-    override fun signUp(name: String, listener: OnEmailVerificationListener) {
+    override fun signUp(name: String, listener: EmailVerifyListener) {
         reloadCnt ++
         val currentUser = firebaseAuth.currentUser ?: return
 
@@ -166,16 +161,8 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override fun updateCurrentUser(userDomain: UserDomain, changeProfileImage: Boolean) {
-        val userData = UserData(
-            name = userDomain.name,
-            uid = userDomain.uid,
-            profileImage = userDomain.profileImage,
-            email = userDomain.email,
-            lastTimeStamp = userDomain.lastTimeStamp
-        )
 
         if (changeProfileImage) {
-            isProfileImageDownloaded = false
 
             val metadata = storageMetadata {
                 contentType = "image/jpeg"
@@ -183,39 +170,51 @@ class UserRepositoryImpl @Inject constructor(
 
             firebaseStorage
                 .reference
-                .child(FIREBASE_FIRST_CHILD_PROFILEIMAGES + userData.uid)
-                .putFile(Uri.parse(userData.profileImage), metadata)
+                .child(FIREBASE_FIRST_CHILD_PROFILEIMAGES + userDomain.uid)
+                .putFile(Uri.parse(userDomain.profileImage), metadata)
                 .addOnCompleteListener { task ->
-                    userData.profileImage = task.result.uploadSessionUri.toString()
+                    userDomain.profileImage = task.result.uploadSessionUri.toString()
+                    val userData = mapOf(
+                        EMAIL to userDomain.email,
+                        UID to userDomain.uid,
+                        NAME to userDomain.name,
+                        PROFILLE_IMAGE to userDomain.profileImage,
+                        LAST_TIME_STAMP to userDomain.lastTimeStamp
+                    )
+
                     db
                         .child(FIREBASE_FIRST_CHILD_USERS)
-                        .child(userData.uid)
-                        .setValue(userData)
+                        .child(userDomain.uid)
+                        .updateChildren(userData)
                 }
         } else {
+            val userData = mapOf(
+                EMAIL to userDomain.email,
+                UID to userDomain.uid,
+                NAME to userDomain.name,
+                PROFILLE_IMAGE to userDomain.profileImage,
+                LAST_TIME_STAMP to userDomain.lastTimeStamp
+            )
+
             db
                 .child(FIREBASE_FIRST_CHILD_USERS)
-                .child(userData.uid)
-                .setValue(userData)
+                .child(userDomain.uid)
+                .updateChildren(userData)
         }
     }
 
-    private var isProfileImageDownloaded = false
-
     override fun downloadProfileImage(
         userID: String,
-        onFileDownloadListener: OnFileDownloadListener
+        fileDownloadListener: FileDownloadListener
     ) {
-        isProfileImageDownloaded = true
-
         firebaseStorage.reference
             .child("profileImages/$userID")
             .getBytes(TEN_MEGABYTE)
             .addOnSuccessListener {
-                onFileDownloadListener.onSuccess(it)
+                fileDownloadListener.onSuccess(it)
             }
             .addOnFailureListener {
-                onFileDownloadListener.onFail(it)
+                fileDownloadListener.onFail(it)
             }
     }
 
@@ -225,15 +224,20 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override fun fetchUserByIdAsFlow(uid: String): Flow<UserDomain> {
-
-        return roomDB.getUserDao().fetchUserByIdAsFlow(uid).map {
-            val userData = it ?: UserData()
-            UserDomain(userData.name, userData.email, userData.uid, userData.profileImage, userData.lastTimeStamp)
-        }
+        return roomDB.getUserDao().fetchUserByIdAsFlow(uid)
+            .map {
+                val userData = it ?: UserData()
+                UserDomain(userData.name, userData.email, userData.uid, userData.profileImage, userData.lastTimeStamp)
+            }
     }
 
     companion object {
         const val FIREBASE_FIRST_CHILD_USERS = "user"
         const val FIREBASE_FIRST_CHILD_PROFILEIMAGES = "profileImages/"
+        const val EMAIL = "email"
+        const val LAST_TIME_STAMP = "lastTimeStamp"
+        const val NAME = "name"
+        const val PROFILLE_IMAGE = "profileImage"
+        const val UID = "uid"
     }
 }

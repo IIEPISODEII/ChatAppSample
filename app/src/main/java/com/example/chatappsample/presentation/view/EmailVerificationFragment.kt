@@ -8,7 +8,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.example.chatappsample.R
-import com.example.chatappsample.domain.`interface`.OnEmailVerificationListener
+import com.example.chatappsample.domain.`interface`.EmailVerifyListener
 import com.example.chatappsample.domain.dto.UserDomain
 import com.example.chatappsample.domain.repository.UserRepository
 import com.example.chatappsample.presentation.viewmodel.UserViewModel
@@ -50,7 +50,7 @@ class EmailVerificationFragment : Fragment() {
         }
     }
 
-    private val onEmailVerifiedListener = object: OnEmailVerificationListener {
+    private val onEmailVerifiedListener = object: EmailVerifyListener {
         override fun onSuccess(user: UserDomain) {
             Toast.makeText(this@EmailVerificationFragment.requireActivity(), "인증이 완료됐습니다.", Toast.LENGTH_SHORT).show()
             this@EmailVerificationFragment.requireActivity()

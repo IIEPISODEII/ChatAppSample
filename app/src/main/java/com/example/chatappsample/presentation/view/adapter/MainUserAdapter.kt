@@ -34,6 +34,9 @@ class MainUserAdapter(var currentUserId: String, var userList: ArrayList<UserDom
         holder.userName.text = user.name
         Glide.with(holder.itemView.context)
             .load(_userProfileImageList[user.uid])
+            .error(R.drawable.ic_baseline_person_24)
+            .placeholder(R.drawable.ic_baseline_person_24)
+            .centerCrop()
             .into(holder.userProfileImage)
     }
 

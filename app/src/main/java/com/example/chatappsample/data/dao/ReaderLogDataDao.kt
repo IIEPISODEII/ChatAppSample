@@ -11,6 +11,9 @@ interface ReaderLogDataDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertReaderLog(readerLogData: ReaderLogData)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertReaderLogList(readerLogDataList: List<ReaderLogData>)
+
     @Query("SELECT * FROM readerlog WHERE chatroomId = :targetChatroom")
     fun fetchReaderLogList(targetChatroom: String): List<ReaderLogData>
 

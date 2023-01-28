@@ -1,24 +1,24 @@
 package com.example.chatappsample.domain.repository
 
-import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
-import com.example.chatappsample.domain.`interface`.OnFirebaseCommunicationListener
+import com.example.chatappsample.domain.`interface`.FileDownloadListener
+import com.example.chatappsample.domain.`interface`.FileUploadListener
 import com.example.chatappsample.domain.dto.MessageDomain
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 
 interface ChatRepository {
 
-    fun fetchMessagesFromExternalDB(
+    fun fetchMessagesFromRemoteDB(
         chatRoom: String,
         coroutineScope: CoroutineScope
     )
 
-    suspend fun fetchMessagesFromRoomDBAsFlow(
+    suspend fun fetchMessagesFromLocalDBAsFlow(
         chatRoom: String,
         queriesSize: Int
     ): Flow<List<MessageDomain?>>
 
-    suspend fun fetchMessagesFromRoomDB(
+    suspend fun fetchMessagesFromLocalDB(
         chatRoom: String,
         queriesSize: Int,
         offset: Int
@@ -27,13 +27,13 @@ interface ChatRepository {
     suspend fun sendMessage(
         message: MessageDomain,
         chatRoom: String,
-        onFirebaseCommunicationListener: OnFirebaseCommunicationListener
+        fileUploadListener: FileUploadListener
     )
 
     suspend fun uploadFile(
         message: MessageDomain,
         chatRoom: String,
-        onFirebaseCommunicationListener: OnFirebaseCommunicationListener
+        fileUploadListener: FileUploadListener
     )
 
     suspend fun fetchLastMessageOfChatRoom(
@@ -42,6 +42,6 @@ interface ChatRepository {
 
     fun downloadFile(
         message: MessageDomain,
-        onFileDownloadListener: OnFileDownloadListener
+        fileDownloadListener: FileDownloadListener
     )
 }

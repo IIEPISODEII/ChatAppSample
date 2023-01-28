@@ -9,6 +9,9 @@ interface ChatroomDataDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insertChatRoom(chatRoom: ChatroomData)
 
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    fun insertChatRoomList(chatRoomList: List<ChatroomData>)
+
     @Delete
     fun deleteChatRoom(chatRoom: ChatroomData)
 

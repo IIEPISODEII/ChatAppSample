@@ -7,38 +7,31 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
-import com.example.chatappsample.domain.`interface`.OnFirebaseCommunicationListener
+import com.example.chatappsample.domain.`interface`.FileDownloadListener
+import com.example.chatappsample.domain.`interface`.FileUploadListener
 import com.example.chatappsample.domain.dto.ChatroomDomain
 import com.example.chatappsample.domain.dto.MessageDomain
 import com.example.chatappsample.domain.usecase.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     private val sendMessageUsecase: SendMessageUsecase,
-    private val fetchMessagesFromExternalDBUsecase: FetchMessagesFromExternalDBUsecase,
-    private val fetchMessageFromRoomDBUsecase: FetchMessagesFromRoomDBUsecase,
-    private val fetchChatroomListFromRoomUsecase: FetchChatroomListFromRoomUsecase,
-    private val fetchReaderLogFromExternalDBUsecase: FetchReaderLogFromExternalDBUsecase,
-    private val fetchReaderLogAsFlowUsecase: FetchChatroomListFromRoomAsFlowUsecase,
+    private val fetchMessagesFromRemoteDBUsecase: FetchMessagesFromRemoteDBUsecase,
+    private val fetchMessageFromRoomDBUsecase: FetchMessagesFromLocalDBUsecase,
+    private val fetchChatroomListFromLocalDBUsecase: FetchChatroomListFromLocalDBUsecase,
+    private val fetchReaderLogFromRemoteDBUsecase: FetchReaderLogFromRemoteDBUsecase,
+    private val fetchReaderLogAsFlowUsecase: FetchChatroomListFromLocalDBAsFlowUsecase,
     private val fetchLastMessageUsecase: FetchLastMessageUsecase,
     private val uploadFileUsecase: UploadFileUsecase,
     private val downloadFileUsecase: DownloadFileUsecase,
     private val downloadProfileImageUsecase: DownloadProfileImageUsecase,
     private val updateChatRoomUsecase: UpdateChatroomUsecase
 ) : ViewModel(), Observable {
-
-    companion object {
-        private var chatRoomId = ""
-
-        fun setReceiverRoom(room: String) {
-            chatRoomId = room
-        }
-    }
 
     @Bindable
     val messageTxt = MutableLiveData<String>()
@@ -51,26 +44,26 @@ class ChatViewModel @Inject constructor(
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
-            fetchMessagesFromExternalDB(chatRoomId)
-            fetchMessagesFromRoomDB(chatRoomId)
-            fetchLastMessageFromRoomDB(chatRoomId)
+            fetchMessagesFromRemoteDB(chatRoomId)
+            fetchMessagesFromLocalDB(chatRoomId)
+            fetchLastMessageFromLocalDB(chatRoomId)
         }
     }
 
     suspend fun sendMessage(
         message: MessageDomain,
         chatRoom: String,
-        onFirebaseCommunicationListener: OnFirebaseCommunicationListener
+        fileUploadListener: FileUploadListener
     ) {
         sendMessageUsecase(
             message = message,
             chatRoom = chatRoom,
-            onFirebaseCommunicationListener = onFirebaseCommunicationListener
+            fileUploadListener = fileUploadListener
         )
     }
 
-    private fun fetchMessagesFromExternalDB(chatRoom: String) {
-        fetchMessagesFromExternalDBUsecase(chatRoom, viewModelScope)
+    private fun fetchMessagesFromRemoteDB(chatRoom: String) {
+        fetchMessagesFromRemoteDBUsecase(chatRoom, viewModelScope)
     }
 
     fun setPreMessageList(messageDomainList: List<MessageDomain>) {
@@ -83,17 +76,17 @@ class ChatViewModel @Inject constructor(
     private var receivedMessages = 1
     private val basicMessageDownloadSize = 20
     private var offsetSize = 0
-    suspend fun fetchMessagesFromRoomDB(chatRoom: String) {
+    suspend fun fetchMessagesFromLocalDB(chatRoom: String) {
         offsetSize += basicMessageDownloadSize
 
         val oldMessages = fetchMessageFromRoomDBUsecase(chatRoom, basicMessageDownloadSize, offsetSize - basicMessageDownloadSize + receivedMessages)
 
         newlyMessageDomainList.addAll(0, oldMessages)
-        withContext(Dispatchers.IO) { if (newlyMessageDomainList.isEmpty()) fetchLastMessageFromRoomDB(chatRoom) }
+        withContext(Dispatchers.IO) { if (newlyMessageDomainList.isEmpty()) fetchLastMessageFromLocalDB(chatRoom) }
         _messageDomainList.postValue(newlyMessageDomainList)
     }
 
-    private suspend fun fetchLastMessageFromRoomDB(chatRoom: String) {
+    private suspend fun fetchLastMessageFromLocalDB(chatRoom: String) {
         addMessageAfterLaunchingActivity()
         fetchLastMessageUsecase(chatRoom).collect {
             if (it == null) return@collect
@@ -120,36 +113,42 @@ class ChatViewModel @Inject constructor(
     suspend fun uploadFile(
         messageDomain: MessageDomain,
         chatRoom: String,
-        onFirebaseCommunicationListener: OnFirebaseCommunicationListener
+        fileUploadListener: FileUploadListener
     ) {
         uploadFileUsecase(
             messageDomain,
             chatRoom,
-            onFirebaseCommunicationListener
+            fileUploadListener
         )
     }
 
-    fun downloadFile(messageDomain: MessageDomain, onFileDownloadListener: OnFileDownloadListener) {
-        downloadFileUsecase(messageDomain, onFileDownloadListener)
+    fun downloadFile(messageDomain: MessageDomain, fileDownloadListener: FileDownloadListener) {
+        downloadFileUsecase(messageDomain, fileDownloadListener)
     }
 
-    fun downloadProfileImage(userID: String, onFileDownloadListener: OnFileDownloadListener) {
-        downloadProfileImageUsecase(userID, onFileDownloadListener)
+    fun downloadProfileImage(userID: String, fileDownloadListener: FileDownloadListener) {
+        downloadProfileImageUsecase(userID, fileDownloadListener)
     }
 
-    fun updateChatRoom(myId: String, yourId: String, time: String, onSuccess: (String) -> Unit, onFail: () -> Unit, enter: Boolean) {
-        updateChatRoomUsecase(myId, yourId, time, onSuccess, onFail, enter)
+    fun updateChatRoom(yourId: String, time: String, onSuccess: (String) -> Unit, onFail: () -> Unit, enter: Boolean) {
+        updateChatRoomUsecase(UserViewModel.currentUserId(), yourId, time, onSuccess, onFail, enter)
     }
 
-    fun fetchReaderLogFromExternalDB(chatroomId: String, myId: String, coroutineScope: CoroutineScope) {
-        fetchReaderLogFromExternalDBUsecase(chatroomId, myId, coroutineScope)
+    fun fetchReaderLogFromRemoteDB(chatroomId: String, coroutineScope: CoroutineScope) {
+        fetchReaderLogFromRemoteDBUsecase(chatroomId, UserViewModel.currentUserId(), coroutineScope)
     }
 
-    suspend fun fetchChatroomInformation(userId: String): Flow<List<ChatroomDomain>> {
-        return fetchChatroomListFromRoomUsecase(userId)
-    }
+    suspend fun fetchChatroomInformation(userId: String): Flow<List<ChatroomDomain>> = fetchChatroomListFromLocalDBUsecase(userId).stateIn(viewModelScope)
 
     suspend fun fetchReaderLogAsFlow(): Flow<List<ChatroomDomain.ReaderLogDomain>> {
         return fetchReaderLogAsFlowUsecase(chatRoomId)
+    }
+
+    companion object {
+        private var chatRoomId = ""
+
+        fun setReceiverRoom(room: String) {
+            chatRoomId = room
+        }
     }
 }

@@ -6,10 +6,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
-class FetchUserListFromRoomDBUsecase @Inject constructor(private val userRepository: UserRepository) {
+class FetchUserListFromLocalDBUsecase @Inject constructor(private val userRepository: UserRepository) {
 
     suspend operator fun invoke(myId: String): Flow<List<UserDomain>> {
-        return userRepository.fetchUserListFromRoomDB().map { list ->
+        return userRepository.fetchUserListFromLocalDB().map { list ->
             list.filter { user ->
                 user.uid != myId
             }

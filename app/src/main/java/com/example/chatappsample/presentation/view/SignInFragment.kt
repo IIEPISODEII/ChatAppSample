@@ -12,9 +12,8 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.example.chatappsample.R
-import com.example.chatappsample.domain.`interface`.OnSignInListener
+import com.example.chatappsample.domain.`interface`.SignInListener
 import com.example.chatappsample.domain.repository.SharedPreferenceRepository
-import com.example.chatappsample.presentation.view.MainActivity.Companion.CURRENT_USER
 import com.example.chatappsample.presentation.viewmodel.UserViewModel
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.checkbox.MaterialCheckBox
@@ -108,17 +107,17 @@ class SignInFragment : Fragment() {
 
     private fun login(email: String, password: String) {
 
-        val onSignInListener = object: OnSignInListener {
+        val signInListener = object: SignInListener {
             override fun <T> onSuccess(successParam: T) {
                 if (successParam is AuthResult) {
                     val user = successParam.user ?: return
                     val isEmailVerified = user.isEmailVerified
 
                     if (isEmailVerified) {
+                        UserViewModel.setCurrentUserId(user.uid)
                         this@SignInFragment.requireActivity().finish()
 
                         val mIntent = Intent(this@SignInFragment.requireActivity(), MainActivity::class.java)
-                        mIntent.putExtra(CURRENT_USER, user.uid)
                         startActivity(mIntent)
                     } else {
                         val verificationFragment = EmailVerificationFragment()
@@ -145,6 +144,6 @@ class SignInFragment : Fragment() {
             }
 
         }
-        viewModel.signIn(email, password, onSignInListener)
+        viewModel.signIn(email, password, signInListener)
     }
 }

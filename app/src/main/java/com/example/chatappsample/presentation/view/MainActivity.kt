@@ -11,22 +11,12 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.*
 import androidx.viewpager2.adapter.FragmentStateAdapter
-import com.bumptech.glide.Glide
 import com.example.chatappsample.R
 import com.example.chatappsample.data.repository.AppDatabase
 import com.example.chatappsample.databinding.ActivityMainBinding
-import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
-import com.example.chatappsample.domain.dto.UserDomain
 import com.example.chatappsample.presentation.viewmodel.UserViewModel
-import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -37,7 +27,6 @@ class MainActivity : FragmentActivity() {
     
     val viewModel: UserViewModel by lazy { ViewModelProvider(this)[UserViewModel::class.java] }
     private lateinit var mBinding: ActivityMainBinding
-    private var currentUserDomain: UserDomain? = null
     private val userListFragment = UserListFragment()
     private val chatroomListFragment = ChatroomListFragment()
     private val mypageFragment = MypageFragment()
@@ -51,22 +40,15 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val currentUserId = intent.getStringExtra(CURRENT_USER)!!
-        viewModel.fetchAllUsersList(currentUserId)
-
-        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
-
-        lifecycleScope.launch(Dispatchers.IO) {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.setCurrentUserAndFetchChatroomList(currentUserId, this)
-            }
-        }
 
         mBinding = DataBindingUtil.setContentView(this, R.layout.activity_main)
         mBinding.viewModel = this@MainActivity.viewModel
+
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         mBinding.lifecycleOwner = this@MainActivity
 
-        mBinding.viewModel!!.fetchUserListFromExternalDB()
+        viewModel.fetchUserListFromRemoteDB()
+        viewModel.fetchChatroomListFromRemoteDB()
 
         mBinding.viewpager2Main.adapter = mainPagerAdapter
 
@@ -85,7 +67,6 @@ class MainActivity : FragmentActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.action_log_out -> {
-                viewModel.signOut()
                 viewModel.cancelAutoLogin()
                 finish()
                 val intent = Intent(this, SignInActivity::class.java).apply {
@@ -113,8 +94,4 @@ class MainActivity : FragmentActivity() {
      * @property tabIconDrawableId  Tab Icon drawable id
      */
     data class MainTabItem(val fragment: Fragment, val tabString: String, val tabIconDrawableId: Int)
-
-    companion object {
-        const val CURRENT_USER = "current_user"
-    }
 }

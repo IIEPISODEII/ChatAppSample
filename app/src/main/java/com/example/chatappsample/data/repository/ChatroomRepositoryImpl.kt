@@ -1,7 +1,5 @@
 package com.example.chatappsample.data.repository
 
-import android.os.Build
-import android.util.Log
 import com.example.chatappsample.data.entity.ChatroomData
 import com.example.chatappsample.data.entity.ReaderLogData
 import com.example.chatappsample.data.repository.ChatRepositoryImpl.Companion.FIREBASE_FIRST_CHILD_CHATS
@@ -53,34 +51,13 @@ class ChatroomRepositoryImpl @Inject constructor(
         mChatroomStateMyValueEventListener = object: ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 if (!snapshot.exists()) {
-                    db
-                        .child(FIREBASE_FIRST_CHILD_USERS)
-                        .child(myId)
-                        .child(FIREBASE_SECOND_CHILD_CHATROOMS)
-                        .updateChildren(mapOf(Pair(yourId, randomChatRoomId)))
-                        .addOnSuccessListener {
+                    val chatroomData: MutableMap<String, Any> = hashMapOf(
+                        "$FIREBASE_FIRST_CHILD_USERS/$yourId/$FIREBASE_SECOND_CHILD_CHATROOMS/" to mapOf(myId to randomChatRoomId),
+                        "$FIREBASE_FIRST_CHILD_USERS/$myId/$FIREBASE_SECOND_CHILD_CHATROOMS/" to mapOf(yourId to randomChatRoomId),
+                        "$FIREBASE_FIRST_CHILD_CHATS/$randomChatRoomId/$FIREBASE_SECOND_CHILD_READ_LOG" to mapOf(myId to time, yourId to "")
+                    )
 
-                            mChatroomStateOnSuccessListener = OnSuccessListener<Void> {
-                                onSuccess(randomChatRoomId)
-                            }
-
-                            db
-                                .child(FIREBASE_FIRST_CHILD_USERS)
-                                .child(yourId)
-                                .child(FIREBASE_SECOND_CHILD_CHATROOMS)
-                                .updateChildren(mapOf(Pair(myId, randomChatRoomId)))
-                            db
-                                .child(FIREBASE_FIRST_CHILD_CHATS)
-                                .child(randomChatRoomId)
-                                .child(FIREBASE_SECOND_CHILD_READ_LOG)
-                                .updateChildren(
-                                    mapOf(
-                                        Pair(myId, time),
-                                        Pair(yourId, "")
-                                    )
-                                )
-                                .addOnSuccessListener(mChatroomStateOnSuccessListener!!)
-                        }
+                    db.updateChildren(chatroomData)
                 } else {
                     val currentChatRoomId = snapshot.value.toString()
                     val insertTime = if (enter) "9" else time
@@ -93,7 +70,7 @@ class ChatroomRepositoryImpl @Inject constructor(
                         .child(FIREBASE_FIRST_CHILD_CHATS)
                         .child(currentChatRoomId)
                         .child(FIREBASE_SECOND_CHILD_READ_LOG)
-                        .updateChildren(mapOf(Pair(myId, insertTime)))
+                        .updateChildren(mapOf(myId to insertTime))
                         .addOnSuccessListener(mChatroomStateOnSuccessListener!!)
                 }
             }
@@ -103,93 +80,77 @@ class ChatroomRepositoryImpl @Inject constructor(
             }
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            db
-                .child(FIREBASE_FIRST_CHILD_USERS)
-                .child(myId)
-                .child(FIREBASE_SECOND_CHILD_CHATROOMS)
-                .child(yourId)
-                .addValueEventListener(mChatroomStateMyValueEventListener!!)
-
-
-        } else {
-            Log.d("ChatroomRepoImpl", "데이터 동기화 실패 - 원인: API Level 미달")
-        }
+        db
+            .child(FIREBASE_FIRST_CHILD_USERS)
+            .child(myId)
+            .child(FIREBASE_SECOND_CHILD_CHATROOMS)
+            .child(yourId)
+            .addValueEventListener(mChatroomStateMyValueEventListener!!)
     }
 
-
-    override fun fetchChatroomListFromExternalDB(currentUserId: String, coroutineScope: CoroutineScope) {
+    override fun fetchChatroomListFromRemoteDB(currentUserId: String, coroutineScope: CoroutineScope) {
         if (mChatroomListCoroutineScope != null && mChatroomListCoroutineScope == coroutineScope) return
 
-        if (mChatroomListFirebaseValueEventListener != null) {
+        if (mChatroomListFirebaseChildEventListener != null) {
             db
                 .child(FIREBASE_FIRST_CHILD_USERS)
                 .child(currentUserId)
                 .child(FIREBASE_SECOND_CHILD_CHATROOMS)
-                .removeEventListener(mChatroomListFirebaseValueEventListener!!)
+                .removeEventListener(mChatroomListFirebaseChildEventListener!!)
         }
 
         mChatroomListCoroutineScope = coroutineScope
 
-        mChatroomListFirebaseValueEventListener = object: ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                snapshot.children.forEach {
-                    val chatroomId = it.value.toString()
-                    db
-                        .child(FIREBASE_FIRST_CHILD_CHATS)
-                        .child(chatroomId)
-                        .child(FIREBASE_SECOND_CHILD_READ_LOG)
-                        .addChildEventListener(object: ChildEventListener {
-                            override fun onChildAdded(
-                                snapshot: DataSnapshot,
-                                previousChildName: String?
-                            ) {
-                                val chatroomUserId = snapshot.key.toString()
-                                val chatroomUserReadTime = snapshot.value.toString()
+        mChatroomListFirebaseChildEventListener = object: ChildEventListener {
+            override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
 
+                val chatroomId = snapshot.value as String
+                db
+                    .child(FIREBASE_FIRST_CHILD_CHATS)
+                    .child(chatroomId)
+                    .child(FIREBASE_SECOND_CHILD_READ_LOG)
+                    .addListenerForSingleValueEvent(object: ValueEventListener {
+                        override fun onDataChange(snapshot: DataSnapshot) {
+                            val chatroomData = ChatroomData(currentUserId, chatroomId)
+                            val readerLogList = mutableListOf<ReaderLogData>()
+
+                            snapshot.children.forEach {
                                 val readerLogData = ReaderLogData(
                                     chatroomId = chatroomId,
                                     currentAccountId = currentUserId,
-                                    userId = chatroomUserId,
-                                    readTime = chatroomUserReadTime
+                                    userId = it.key!!,
+                                    readTime = it.value as String
                                 )
-                                mChatroomListCoroutineScope!!.launch(Dispatchers.IO) {
-                                    roomDB.getReaderLogDataDao().insertReaderLog(readerLogData)
-                                }
+                                readerLogList.add(readerLogData)
                             }
 
-                            override fun onChildChanged(
-                                snapshot: DataSnapshot,
-                                previousChildName: String?
-                            ) {
-                                val chatroomUserId = snapshot.key.toString()
-                                val chatroomUserReadTime = snapshot.value.toString()
-
-                                val readerLogData = ReaderLogData(
-                                    chatroomId = chatroomId,
-                                    currentAccountId = currentUserId,
-                                    userId = chatroomUserId,
-                                    readTime = chatroomUserReadTime
-                                )
-                                mChatroomListCoroutineScope!!.launch(Dispatchers.IO) {
-                                    roomDB.getReaderLogDataDao().insertReaderLog(readerLogData)
-                                }
+                            mChatroomListCoroutineScope!!.launch(Dispatchers.IO) {
+                                roomDB.getChatroomDataDao().insertChatRoom(chatroomData)
+                                roomDB.getReaderLogDataDao().insertReaderLogList(readerLogList)
                             }
+                        }
 
-                            override fun onChildRemoved(snapshot: DataSnapshot) {}
+                        override fun onCancelled(error: DatabaseError) {
 
-                            override fun onChildMoved(
-                                snapshot: DataSnapshot,
-                                previousChildName: String?
-                            ) {}
+                        }
 
-                            override fun onCancelled(error: DatabaseError) {}
+                    })
+            }
 
-                        })
-                    mChatroomListCoroutineScope!!.launch(Dispatchers.IO) {
-                        roomDB.getChatroomDataDao().insertChatRoom(ChatroomData(currentUserId, chatroomId))
-                    }
+            override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
+
+            }
+
+            override fun onChildRemoved(snapshot: DataSnapshot) {
+                val chatroomId = snapshot.value as String
+                val chatroomData = ChatroomData(currentUserId, chatroomId)
+                mChatroomListCoroutineScope!!.launch(Dispatchers.IO) {
+                    roomDB.getChatroomDataDao().deleteChatRoom(chatroomData)
                 }
+            }
+
+            override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {
+
             }
 
             override fun onCancelled(error: DatabaseError) {}
@@ -199,10 +160,10 @@ class ChatroomRepositoryImpl @Inject constructor(
             .child(FIREBASE_FIRST_CHILD_USERS)
             .child(currentUserId)
             .child(FIREBASE_SECOND_CHILD_CHATROOMS)
-            .addValueEventListener(mChatroomListFirebaseValueEventListener!!)
+            .addChildEventListener(mChatroomListFirebaseChildEventListener!!)
     }
 
-    override suspend fun fetchChatroomListFromRoom(currentUserId: String): Flow<List<ChatroomDomain>> {
+    override suspend fun fetchChatroomListFromLocalDB(currentUserId: String): Flow<List<ChatroomDomain>> {
 
         return roomDB.getChatroomDataDao().fetchChatroomList(currentUserId)
             .map {
@@ -212,7 +173,7 @@ class ChatroomRepositoryImpl @Inject constructor(
             }
     }
 
-    override fun fetchReaderLogFromExternalDB(chatroomId: String, currentUserId: String, coroutineScope: CoroutineScope) {
+    override fun fetchReaderLogFromRemoteDB(chatroomId: String, currentUserId: String, coroutineScope: CoroutineScope) {
         if (mReaderLogValueEventListener != null && mReaderLogCoroutineScope == coroutineScope) return
 
         if (mReaderLogValueEventListener != null) {
@@ -225,11 +186,13 @@ class ChatroomRepositoryImpl @Inject constructor(
 
         mReaderLogValueEventListener = object: ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
+                val readerLogList = mutableListOf<ReaderLogData>()
                 snapshot.children.forEach {
                     val readerLogData = ReaderLogData(chatroomId, currentUserId, it.key!!, it.value!! as String)
-                    coroutineScope.launch(Dispatchers.IO) {
-                        roomDB.getReaderLogDataDao().insertReaderLog(readerLogData)
-                    }
+                    readerLogList.add(readerLogData)
+                }
+                coroutineScope.launch(Dispatchers.IO) {
+                    roomDB.getReaderLogDataDao().insertReaderLogList(readerLogList)
                 }
             }
 
@@ -245,7 +208,7 @@ class ChatroomRepositoryImpl @Inject constructor(
             .addValueEventListener(mReaderLogValueEventListener!!)
     }
 
-    override suspend fun fetchReaderLogFromRoom(chatroomId: String): List<ChatroomDomain.ReaderLogDomain> {
+    override suspend fun fetchReaderLogFromLocalDB(chatroomId: String): List<ChatroomDomain.ReaderLogDomain> {
         val readerLogDomainList = roomDB.getReaderLogDataDao().fetchReaderLogList(chatroomId)
             .map {
                 ChatroomDomain.ReaderLogDomain(userId = it.userId, readTime = it.readTime)
@@ -253,12 +216,12 @@ class ChatroomRepositoryImpl @Inject constructor(
         return readerLogDomainList
     }
 
-    override suspend fun fetchReaderLogFromRoomAsFlow(chatroomId: String): Flow<List<ChatroomDomain.ReaderLogDomain>> {
+    override suspend fun fetchReaderLogFromLocalDBAsFlow(chatroomId: String): Flow<List<ChatroomDomain.ReaderLogDomain>> {
         val readerLogDomainList = roomDB.getReaderLogDataDao().fetchReaderLogListAsFlow(chatroomId)
             .map {
                 val readerLogDataList = mutableListOf<ChatroomDomain.ReaderLogDomain>()
-                it.forEach {
-                    val readerLogDomain = ChatroomDomain.ReaderLogDomain(it.userId, it.readTime)
+                it.forEach { readerLog ->
+                    val readerLogDomain = ChatroomDomain.ReaderLogDomain(readerLog.userId, readerLog.readTime)
                     readerLogDataList.add(readerLogDomain)
                 }
                 readerLogDataList
@@ -278,7 +241,7 @@ class ChatroomRepositoryImpl @Inject constructor(
         private var mReaderLogCoroutineScope: CoroutineScope? = null
         private var mReaderLogValueEventListener: ValueEventListener? = null
 
-        private var mChatroomListFirebaseValueEventListener: ValueEventListener? = null
+        private var mChatroomListFirebaseChildEventListener: ChildEventListener? = null
         private var mChatroomListCoroutineScope: CoroutineScope? = null
 
         fun initializeOverlapCheck() {
@@ -289,7 +252,7 @@ class ChatroomRepositoryImpl @Inject constructor(
             mReaderLogCoroutineScope = null
             mReaderLogValueEventListener = null
 
-            mChatroomListFirebaseValueEventListener = null
+            mChatroomListFirebaseChildEventListener = null
             mChatroomListCoroutineScope = null
         }
     }

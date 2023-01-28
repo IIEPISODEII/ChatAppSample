@@ -10,16 +10,23 @@ import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.bumptech.glide.Glide
 import com.example.chatappsample.R
 import com.example.chatappsample.databinding.FragmentMyPageBinding
-import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
+import com.example.chatappsample.domain.`interface`.FileDownloadListener
 import com.example.chatappsample.domain.dto.UserDomain
 import com.example.chatappsample.presentation.viewmodel.UserViewModel
 import com.example.chatappsample.util.CharLengthInputFilter
 import com.example.chatappsample.util.LetterDigitsInputFilter
-import com.google.android.material.imageview.ShapeableImageView
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import javax.annotation.Nullable
 
 class MypageFragment : Fragment() {
 
@@ -42,11 +49,10 @@ class MypageFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        viewModel.currentUserDomain.observe(this@MypageFragment.requireActivity()) {
-            if (it == null) return@observe
-            myProfile = it
+        viewModel.currentUserInfo.observe(viewLifecycleOwner) {
+            if (it.uid.isEmpty()) return@observe
 
-            viewModel.downloadProfileImage(it.uid, object: OnFileDownloadListener {
+            val fileDownloadListenerImpl = object: FileDownloadListener {
                 override fun onSuccess(byteArray: ByteArray) {
                     Glide
                         .with(this@MypageFragment.requireActivity())
@@ -63,11 +69,20 @@ class MypageFragment : Fragment() {
                         .into(mBinding.ivMyPageUserProfileImage)
                     Log.e("Download Profile", e.message ?: "")
                 }
-            })
+            }
+
+            myProfile = it
+
+            mBinding.tvMyPageUserProfileName.text = myProfile!!.name
+            viewModel.downloadProfileImage(myProfile!!.uid, fileDownloadListenerImpl)
         }
 
         viewModel.isProfileEditMode.observe(this.viewLifecycleOwner) {
             mBinding.tvMyPageUserProfileNameRules.visibility = if (it) View.VISIBLE else View.INVISIBLE
+            mBinding.tvMyPageUserProfileName.visibility = if (!it) View.VISIBLE else View.INVISIBLE
+            mBinding.etMyPageUserProfileNameModify.visibility = if (it) View.VISIBLE else View.INVISIBLE
+            mBinding.ivMyPageUserProfileEdit.visibility = if (!it) View.VISIBLE else View.INVISIBLE
+            mBinding.btnMyPageUserProfileEditSave.visibility = if (it) View.VISIBLE else View.INVISIBLE
         }
 
         mBinding.btnMyPageUserProfileEditSave.setOnClickListener {
@@ -111,7 +126,6 @@ class MypageFragment : Fragment() {
 
         mBinding.btnMyPageLogout.setOnClickListener {
             viewModel.cancelAutoLogin()
-            viewModel.signOut()
             startActivity(Intent(requireActivity(), SignInActivity::class.java))
             requireActivity().finish()
         }

@@ -14,12 +14,12 @@ interface UserRepository {
     /** 모든 유저 정보 가져오기
      * @param listener 정보를 가져올 경우 콜백 등록
      * **/
-    suspend fun fetchUserListFromRoomDB(): Flow<List<UserDomain>>
+    suspend fun fetchUserListFromLocalDB(): Flow<List<UserDomain>>
 
     fun signIn(
         email: String,
         password: String,
-        listener: OnSignInListener
+        listener: SignInListener
     )
 
     /** 로그아웃 **/
@@ -34,12 +34,12 @@ interface UserRepository {
     fun sendVerificationEmail(
         email: String,
         password: String,
-        listener: OnSendEmailVerificationListener
+        listener: EmailVerificationSendListener
     )
 
     fun signUp(
         name: String = "",
-        listener: OnEmailVerificationListener
+        listener: EmailVerifyListener
     )
 
     /** 파이어베이스 데이터베이스에 유저 정보 저장
@@ -53,11 +53,11 @@ interface UserRepository {
 
     /** 프로필 이미지 다운로드
      * @param userID 유저ID
-     * @param onFileDownloadListener 파일 다운로드할 경우 콜백 등록
+     * @param fileDownloadListener 파일 다운로드할 경우 콜백 등록
      */
     fun downloadProfileImage(
         userID: String,
-        onFileDownloadListener: OnFileDownloadListener
+        fileDownloadListener: FileDownloadListener
     )
 
     suspend fun fetchUserById(uid: String): UserDomain

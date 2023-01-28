@@ -3,8 +3,8 @@ package com.example.chatappsample.data.repository
 import android.net.Uri
 import android.util.Log
 import com.example.chatappsample.data.entity.MessageData
-import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
-import com.example.chatappsample.domain.`interface`.OnFirebaseCommunicationListener
+import com.example.chatappsample.domain.`interface`.FileDownloadListener
+import com.example.chatappsample.domain.`interface`.FileUploadListener
 import com.example.chatappsample.domain.dto.MessageDomain
 import com.example.chatappsample.domain.repository.ChatRepository
 import com.example.chatappsample.util.TEN_MEGABYTE
@@ -29,7 +29,7 @@ class ChatRepositoryImpl @Inject constructor(
 
     private val db = firebaseDatabase.reference
 
-    override fun fetchMessagesFromExternalDB(
+    override fun fetchMessagesFromRemoteDB(
         chatRoom: String,
         coroutineScope: CoroutineScope
     ) {
@@ -76,7 +76,7 @@ class ChatRepositoryImpl @Inject constructor(
             .addChildEventListener(mMessageChildEventListener!!)
     }
 
-    override suspend fun fetchMessagesFromRoomDBAsFlow(
+    override suspend fun fetchMessagesFromLocalDBAsFlow(
         chatRoom: String,
         queriesSize: Int
     ): Flow<List<MessageDomain?>> {
@@ -89,7 +89,7 @@ class ChatRepositoryImpl @Inject constructor(
             }
     }
 
-    override suspend fun fetchMessagesFromRoomDB(
+    override suspend fun fetchMessagesFromLocalDB(
         chatRoom: String,
         queriesSize: Int,
         offset: Int
@@ -104,7 +104,7 @@ class ChatRepositoryImpl @Inject constructor(
     override suspend fun sendMessage(
         message: MessageDomain,
         chatRoom: String,
-        onFirebaseCommunicationListener: OnFirebaseCommunicationListener
+        fileUploadListener: FileUploadListener
     ) {
         db
             .child(FIREBASE_FIRST_CHILD_CHATS)
@@ -113,17 +113,17 @@ class ChatRepositoryImpl @Inject constructor(
             .push()
             .setValue(message)
             .addOnSuccessListener {
-                onFirebaseCommunicationListener.onSuccess()
+                fileUploadListener.onSuccess()
             }
             .addOnCanceledListener {
-                onFirebaseCommunicationListener.onFailure()
+                fileUploadListener.onFailure()
             }
     }
 
     override suspend fun uploadFile(
         message: MessageDomain,
         chatRoom: String,
-        onFirebaseCommunicationListener: OnFirebaseCommunicationListener
+        fileUploadListener: FileUploadListener
     ) {
         val messageData = MessageData(
             messageId = message.messageId,
@@ -147,17 +147,17 @@ class ChatRepositoryImpl @Inject constructor(
                     .push()
                     .setValue(messageData)
                     .addOnSuccessListener {
-                        onFirebaseCommunicationListener.onSuccess()
+                        fileUploadListener.onSuccess()
                     }
             }
             .addOnCanceledListener {
-                onFirebaseCommunicationListener.onFailure()
+                fileUploadListener.onFailure()
             }
     }
 
     override fun downloadFile(
         message: MessageDomain,
-        onFileDownloadListener: OnFileDownloadListener
+        fileDownloadListener: FileDownloadListener
     ) {
         val messageData = MessageData(
             messageId = message.messageId,
@@ -173,10 +173,10 @@ class ChatRepositoryImpl @Inject constructor(
             .child("images/${messageData.senderId}/${messageData.sentTime}/${messageData.message}")
             .getBytes(TEN_MEGABYTE)
             .addOnSuccessListener {
-                onFileDownloadListener.onSuccess(it)
+                fileDownloadListener.onSuccess(it)
             }
             .addOnFailureListener {
-                onFileDownloadListener.onFail(it)
+                fileDownloadListener.onFail(it)
                 it.printStackTrace()
             }
     }

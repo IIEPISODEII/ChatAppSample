@@ -1,19 +1,17 @@
 package com.example.chatappsample.presentation.viewmodel
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.example.chatappsample.domain.`interface`.OnEmailVerificationListener
-import com.example.chatappsample.domain.`interface`.OnFileDownloadListener
-import com.example.chatappsample.domain.`interface`.OnSendEmailVerificationListener
-import com.example.chatappsample.domain.`interface`.OnSignInListener
+import androidx.lifecycle.*
+import com.example.chatappsample.domain.`interface`.EmailVerifyListener
+import com.example.chatappsample.domain.`interface`.FileDownloadListener
+import com.example.chatappsample.domain.`interface`.EmailVerificationSendListener
+import com.example.chatappsample.domain.`interface`.SignInListener
 import com.example.chatappsample.domain.dto.ChatroomDomain
 import com.example.chatappsample.domain.dto.MessageDomain
 import com.example.chatappsample.domain.dto.UserDomain
 import com.example.chatappsample.domain.usecase.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -22,90 +20,47 @@ import javax.inject.Inject
 @HiltViewModel
 class UserViewModel @Inject constructor(
     private val fetchCurrentUserUsecase: FetchCurrentUserUsecase,
-    private val fetchUserListFromExternalDBUsecase: FetchUserListFromExternalDBUsecase,
-    private val fetchUserListUsecase: FetchUserListFromRoomDBUsecase,
-    private val fetchChatRoomListFromExternalDBUsecase: FetchChatroomListFromExternalDBUsecase,
-    private val fetchChatRoomListFromRoomUsecase: FetchChatroomListFromRoomUsecase,
+    private val fetchUserListFromRemoteDBUsecase: FetchUserListFromRemoteDBUsecase,
+    private val fetchUserListUsecase: FetchUserListFromLocalDBUsecase,
+    private val fetchChatRoomListFromRemoteDBUsecase: FetchChatroomListFromRemoteDBUsecase,
+    private val fetchChatRoomListUsecase: FetchChatroomListFromLocalDBUsecase,
     private val signUpUsecase: SignUpUsecase,
     private val signInUsecase: SignInUsecase,
-    private val signOutUsecase: SignOutUsecase,
     private val sendEmailVerificationUsecase: SendEmailVerificationUsecase,
     private val setAutoLoginCheckUsecase: SetAutoLoginCheckUsecase,
     private val getAutoLoginCheckUsecase: GetAutoLoginCheckUsecase,
     private val updateCurrentUserUsecase: UpdateCurrentUserUsercase,
     private val downloadProfileImageUsecase: DownloadProfileImageUsecase,
-    private val fetchMessagesFromExternalDBUsecase: FetchMessagesFromExternalDBUsecase,
-    private val fetchMessageFromRoomDBUsecase: FetchMessagesFromRoomDBUsecase,
+    private val fetchMessagesFromRemoteDBUsecase: FetchMessagesFromRemoteDBUsecase,
     private val fetchLastMessageUsecase: FetchLastMessageUsecase,
     private val updateChatRoomUsecase: UpdateChatroomUsecase
 ) : ViewModel() {
 
-    private var currentUserId: String = ""
-    fun currentUser() = currentUserId
+    val currentUserInfo = fetchCurrentUserUsecase(currentUserId()).asLiveData()
 
-    private val _chatRoomList = MutableStateFlow<List<ChatroomDomain>>(listOf())
-    val chatroomList: StateFlow<List<ChatroomDomain>>
-        get() = _chatRoomList
-
-    suspend fun setCurrentUserAndFetchChatroomList(id: String, coroutineScope: CoroutineScope) {
-        if (currentUserId != "") return
-
-        currentUserId = id
-        fetchChatRoomListFromExternalDBUsecase(currentUserId, coroutineScope)
-        _chatRoomList.value =
-            fetchChatRoomListFromRoomUsecase(currentUserId).stateIn(coroutineScope).value
-        fetchCurrentUserFromRoom(currentUserId)
+    fun fetchChatroomListFromRemoteDB() {
+        fetchChatRoomListFromRemoteDBUsecase(currentUserId(), viewModelScope)
     }
 
-    fun fetchAllUsersList(myId: String) {
-        viewModelScope.launch {
-            fetchAllUsers(myId).collect {
-                _userList.postValue(it)
-            }
-        }
-    }
+    fun fetchUserListFromRemoteDB() = fetchUserListFromRemoteDBUsecase(viewModelScope)
 
-    private val _currentUserDomain = MutableLiveData<UserDomain>()
-    val currentUserDomain: LiveData<UserDomain>
-        get() = _currentUserDomain
+    suspend fun fetchAllUsersList(): Flow<List<UserDomain>> = fetchUserListUsecase(currentUserId())
 
-    private val _userList = MutableLiveData<List<UserDomain>>()
-    val userList: LiveData<List<UserDomain>>
-        get() = _userList
+    suspend fun fetchChatroomList(): Flow<List<ChatroomDomain>> = fetchChatRoomListUsecase(currentUserId())
 
-    private suspend fun fetchAllUsers(myId: String): Flow<List<UserDomain>> {
-        return fetchUserListUsecase(myId).stateIn(viewModelScope)
-    }
-
-    private fun fetchCurrentUserFromRoom(uid: String) {
-        viewModelScope.launch {
-            fetchCurrentUserUsecase(uid).collect {
-                if (it.uid.isEmpty()) return@collect
-
-                _currentUserDomain.value = it
-            }
-        }
-    }
-
-    fun fetchUserListFromExternalDB() = fetchUserListFromExternalDBUsecase(viewModelScope)
-
-    fun signIn(email: String, password: String, listener: OnSignInListener) {
+    fun signIn(email: String, password: String, listener: SignInListener) {
         signInUsecase(email, password, listener)
-    }
-
-    fun signOut() {
-        if (signOutUsecase.signOut()) _currentUserDomain.value = UserDomain()
     }
 
     fun sendVerificationEmail(
         email: String,
         password: String,
-        listener: OnSendEmailVerificationListener
+        listener: EmailVerificationSendListener
     ) {
         sendEmailVerificationUsecase(email, password, listener)
     }
 
-    fun signUp(name: String, listener: OnEmailVerificationListener) {
+    fun signUp(name: String, listener: EmailVerifyListener) {
         signUpUsecase(name, listener)
     }
 
@@ -121,8 +76,8 @@ class UserViewModel @Inject constructor(
         updateCurrentUserUsecase(userDomain, changeProfileImage)
     }
 
-    fun downloadProfileImage(userId: String, onFileDownloadListener: OnFileDownloadListener) {
-        downloadProfileImageUsecase(userId, onFileDownloadListener)
+    fun downloadProfileImage(userId: String, fileDownloadListener: FileDownloadListener) {
+        downloadProfileImageUsecase(userId, fileDownloadListener)
     }
 
     private val _isProfileEditMode = MutableLiveData(false)
@@ -138,17 +93,24 @@ class UserViewModel @Inject constructor(
     }
 
     fun updateChatRoom(
-        myId: String,
         yourId: String,
         time: String,
         onSuccess: (String) -> Unit,
         onFail: () -> Unit,
         enter: Boolean
     ) {
-        updateChatRoomUsecase(myId, yourId, time, onSuccess, onFail, enter)
+        updateChatRoomUsecase(currentUserId(), yourId, time, onSuccess, onFail, enter)
     }
 
-    fun fetchMessagesFromExternalDB(chatroom: String, coroutineScope: CoroutineScope) {
-        fetchMessagesFromExternalDBUsecase(chatroom, coroutineScope)
+    fun fetchMessagesFromRemoteDB(chatroom: String, coroutineScope: CoroutineScope) {
+        fetchMessagesFromRemoteDBUsecase(chatroom, coroutineScope)
+    }
+
+    companion object {
+        private var currentUserId: String = ""
+        fun currentUserId() = currentUserId
+        fun setCurrentUserId(id: String) {
+            currentUserId = id
+        }
     }
 }
