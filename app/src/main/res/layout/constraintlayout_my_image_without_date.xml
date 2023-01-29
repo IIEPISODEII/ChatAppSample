@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingVertical="5dp">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/tv_my_image_time_without_date"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="5dp"
+        android:text="Time"
+        android:textColor="#7F7F7F"
+        android:textSize="12sp"
+        app:layout_constraintBottom_toBottomOf="@id/iv_my_image_without_date"
+        app:layout_constraintEnd_toStartOf="@id/iv_my_image_without_date" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/tv_my_reader_logs_image_viewholder_without_date"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="5dp"
+        android:text="1"
+        android:textColor="#F77700"
+        android:textSize="11sp"
+        app:layout_constraintBottom_toTopOf="@id/tv_my_image_time_without_date"
+        app:layout_constraintEnd_toStartOf="@id/iv_my_image_without_date" />
+
+    <com.google.android.material.imageview.ShapeableImageView
+        android:id="@+id/iv_my_image_without_date"
+        style="@style/ShapeAppearanceOverlay.App.RoundCorner"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="10dp"
+        android:background="@color/light_grey_dfdfdf"
+        android:src="@drawable/ic_outline_image_24"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintCircleRadius="5dp"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

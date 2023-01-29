@@ -6,7 +6,7 @@
     android:paddingVertical="5dp">
 
     <com.google.android.material.textview.MaterialTextView
-        android:id="@+id/tv_current_date_presentation_in_others_image_viewholder"
+        android:id="@+id/tv_current_date_presentation_in_others_image_viewholder_with_date"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="10dp"
@@ -16,23 +16,22 @@
         android:text="Current Date"
         android:textColor="#0F0F0F"
         android:textSize="12dp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/iv_others_image"
+        app:layout_constraintBottom_toTopOf="@id/iv_others_image_user_profile_with_date"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <com.google.android.material.imageview.ShapeableImageView
-        android:id="@+id/iv_others_image_user_profile"
+        android:id="@+id/iv_others_image_user_profile_with_date"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:layout_marginStart="10dp"
         android:src="@drawable/ic_baseline_person_24"
-        app:layout_constraintBottom_toBottomOf="@id/iv_others_image"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/iv_others_image_with_date" />
 
     <com.google.android.material.imageview.ShapeableImageView
-        android:id="@+id/iv_others_image"
+        android:id="@+id/iv_others_image_with_date"
         style="@style/ShapeAppearanceOverlay.App.Circle"
         android:layout_width="160dp"
         android:layout_height="wrap_content"
@@ -40,29 +39,29 @@
         android:background="@color/light_grey_dfdfdf"
         android:src="@drawable/ic_outline_image_24"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toEndOf="@id/iv_others_image_user_profile"
-        app:layout_constraintTop_toBottomOf="@id/tv_current_date_presentation_in_others_image_viewholder" />
+        app:layout_constraintStart_toEndOf="@id/iv_others_image_user_profile_with_date"
+        app:layout_constraintTop_toTopOf="@id/iv_others_image_user_profile_with_date" />
 
     <com.google.android.material.textview.MaterialTextView
-        android:id="@+id/tv_others_image_time"
+        android:id="@+id/tv_others_image_time_with_date"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingHorizontal="5dp"
         android:text="Time"
         android:textColor="#7F7F7F"
         android:textSize="12dp"
-        app:layout_constraintBottom_toBottomOf="@id/iv_others_image"
-        app:layout_constraintStart_toEndOf="@id/iv_others_image" />
+        app:layout_constraintBottom_toBottomOf="@id/iv_others_image_with_date"
+        app:layout_constraintStart_toEndOf="@id/iv_others_image_with_date" />
 
     <com.google.android.material.textview.MaterialTextView
-        android:id="@+id/tv_others_reader_logs_image_viewholder"
+        android:id="@+id/tv_others_reader_logs_image_viewholder_with_date"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingHorizontal="5dp"
         android:text="1"
         android:textColor="#F77700"
         android:textSize="11dp"
-        app:layout_constraintBottom_toTopOf="@id/tv_others_image_time"
-        app:layout_constraintStart_toEndOf="@id/iv_others_image" />
+        app:layout_constraintBottom_toTopOf="@id/tv_others_image_time_with_date"
+        app:layout_constraintStart_toEndOf="@id/iv_others_image_with_date" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

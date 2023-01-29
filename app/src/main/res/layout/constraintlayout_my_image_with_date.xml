@@ -6,7 +6,7 @@
     android:paddingVertical="5dp">
 
     <com.google.android.material.textview.MaterialTextView
-        android:id="@+id/tv_current_date_presentation_in_my_message_viewholder"
+        android:id="@+id/tv_current_date_presentation_in_my_image_viewholder_with_date"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="10dp"
@@ -16,50 +16,45 @@
         android:text="Current Date"
         android:textColor="#0F0F0F"
         android:textSize="12dp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/tv_my_message"
+        app:layout_constraintBottom_toTopOf="@id/iv_my_image_with_date"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <com.google.android.material.textview.MaterialTextView
-        android:id="@+id/tv_my_message_time"
+        android:id="@+id/tv_my_image_time_with_date"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingHorizontal="5dp"
         android:text="Time"
         android:textColor="#7F7F7F"
         android:textSize="12sp"
-        app:layout_constraintBottom_toBottomOf="@id/tv_my_message"
-        app:layout_constraintEnd_toStartOf="@id/tv_my_message" />
+        app:layout_constraintBottom_toBottomOf="@id/iv_my_image_with_date"
+        app:layout_constraintEnd_toStartOf="@id/iv_my_image_with_date" />
 
     <com.google.android.material.textview.MaterialTextView
-        android:id="@+id/tv_my_reader_logs_message_viewholder"
+        android:id="@+id/tv_my_reader_logs_image_viewholder_with_date"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingHorizontal="5dp"
         android:text="1"
         android:textColor="#F77700"
         android:textSize="11sp"
-        app:layout_constraintBottom_toTopOf="@id/tv_my_message_time"
-        app:layout_constraintEnd_toStartOf="@id/tv_my_message" />
+        app:layout_constraintBottom_toTopOf="@id/tv_my_image_time_with_date"
+        app:layout_constraintEnd_toStartOf="@id/iv_my_image_with_date" />
 
-    <com.google.android.material.textview.MaterialTextView
-        android:id="@+id/tv_my_message"
-        android:layout_width="wrap_content"
+    <com.google.android.material.imageview.ShapeableImageView
+        android:id="@+id/iv_my_image_with_date"
+        style="@style/ShapeAppearanceOverlay.App.RoundCorner"
+        android:layout_width="200dp"
         android:layout_height="wrap_content"
         android:layout_marginEnd="10dp"
-        android:background="@drawable/layout_my_message_tv"
-        android:maxWidth="200dp"
-        android:maxLines="6"
-        android:paddingHorizontal="15dp"
-        android:paddingVertical="5dp"
-        android:singleLine="false"
-        android:text="This is your message."
-        android:textColor="@color/white"
-        android:textSize="16sp"
+        android:background="@color/light_grey_dfdfdf"
+        android:src="@drawable/ic_outline_image_24"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintCircleRadius="5dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_current_date_presentation_in_my_image_viewholder_with_date" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

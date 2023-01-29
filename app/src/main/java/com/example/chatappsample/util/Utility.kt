@@ -8,6 +8,10 @@ fun convertDPtoPX(context: Context, dp: Int) : Float {
     return context.resources.displayMetrics.density * dp
 }
 
+fun Int.toDp(context: Context): Float {
+    return context.resources.displayMetrics.density * this
+}
+
 fun convertSimpleDateFormatToTime(sdf: String): Array<String> {
     val dateToRead = sdf.substring(0, if (sdf.lastIndex >= 10) 10 else sdf.lastIndex).split('-').joinToString(".") { it.toInt().toString() }
     val time = sdf.substring(11, 16).split(':').map { it.toInt().toString() }
