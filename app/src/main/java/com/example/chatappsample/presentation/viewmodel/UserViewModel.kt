@@ -88,8 +88,8 @@ class UserViewModel @Inject constructor(
         _isProfileEditMode.postValue(mode)
     }
 
-    suspend fun fetchLastMessage(chatRoom: ChatroomDomain): Flow<MessageDomain?> {
-        return fetchLastMessageUsecase(chatRoom.chatroomId).stateIn(viewModelScope)
+    suspend fun fetchLastMessage(chatRoom: ChatroomDomain): LiveData<MessageDomain?> {
+        return fetchLastMessageUsecase(chatRoom.chatroomId).asLiveData()
     }
 
     fun updateChatRoom(

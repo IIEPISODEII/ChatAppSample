@@ -62,22 +62,25 @@ class ChatroomListFragment : Fragment() {
 
         lifecycleScope.launch(Dispatchers.IO) {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.fetchChatroomList().stateIn(this).collectLatest {
-                    if (it.isEmpty()) return@collectLatest
+                viewModel.fetchChatroomList().collect {
+                    if (it.isEmpty()) return@collect
 
                     val chatroomList = it as ArrayList<ChatroomDomain>
                     rvAdapter.chatroomDomainList = chatroomList
                     rvAdapter.chatroomDomainList.forEachIndexed { idx, chatroom ->
-                        viewModel.fetchMessagesFromRemoteDB(chatroom.chatroomId, this)
-                        viewModel.fetchLastMessage(chatroom).collectLatest { message ->
 
-                            withContext(Dispatchers.Main) {
+                        viewModel.fetchMessagesFromRemoteDB(chatroom.chatroomId, this)
+
+                        launch(Dispatchers.Main) {
+                            viewModel.fetchLastMessage(chatroom).observe(viewLifecycleOwner) { message ->
                                 rvAdapter.addLastMessageToList(chatroom, message)
                                 rvAdapter.notifyItemChanged(idx)
                             }
                         }
                     }
-                    rvAdapter.notifyDataSetChanged()
+                    launch(Dispatchers.Main) {
+                        rvAdapter.notifyDataSetChanged()
+                    }
                 }
             }
         }

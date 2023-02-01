@@ -56,12 +56,7 @@ class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: 
             myMessageTextView.text = messageDomain.message
             myTimeTextView.text = convertSimpleDateFormatToTime(messageDomain.sentTime)[1]
 
-            val messageSentTimeInFormat = messageDomain.sentTime
-                .replace(" ", "")
-                .replace("-", "")
-                .replace(":", "")
-                .replace(".", "")
-                .dropLast(3)
+            val messageSentTimeInFormat = convertToAbbreTime(messageDomain.sentTime)
 
             val leftsToRead = readersLog.count { it.readTime.isEmpty() || it.readTime < messageSentTimeInFormat }
 
@@ -88,12 +83,7 @@ class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: 
             myMessageTextView.text = messageDomain.message
             myTimeTextView.text = convertSimpleDateFormatToTime(messageDomain.sentTime)[1]
 
-            val messageSentTimeInFormat = messageDomain.sentTime
-                .replace(" ", "")
-                .replace("-", "")
-                .replace(":", "")
-                .replace(".", "")
-                .dropLast(3)
+            val messageSentTimeInFormat = convertToAbbreTime(messageDomain.sentTime)
 
             val leftsToRead = readersLog.count { it.readTime.isEmpty() || it.readTime < messageSentTimeInFormat }
 
@@ -124,12 +114,7 @@ class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: 
             othersMessageTextView.text = messageDomain.message
             othersTimeTextView.text = convertSimpleDateFormatToTime(messageDomain.sentTime)[1]
 
-            val messageSentTimeInFormat = messageDomain.sentTime
-                .replace(" ", "")
-                .replace("-", "")
-                .replace(":", "")
-                .replace(".", "")
-                .dropLast(3)
+            val messageSentTimeInFormat = convertToAbbreTime(messageDomain.sentTime)
 
             val leftsToRead = readersLog.count { it.readTime.isEmpty() || it.readTime < messageSentTimeInFormat }
             if (leftsToRead == 0) {
@@ -161,12 +146,7 @@ class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: 
             othersMessageTextView.text = messageDomain.message
             othersTimeTextView.text = convertSimpleDateFormatToTime(messageDomain.sentTime)[1]
 
-            val messageSentTimeInFormat = messageDomain.sentTime
-                .replace(" ", "")
-                .replace("-", "")
-                .replace(":", "")
-                .replace(".", "")
-                .dropLast(3)
+            val messageSentTimeInFormat = convertToAbbreTime(messageDomain.sentTime)
 
             val leftsToRead = readersLog.count { it.readTime.isEmpty() || it.readTime < messageSentTimeInFormat }
             if (leftsToRead == 0) {
@@ -206,12 +186,7 @@ class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: 
                 .into(myImageView)
             myTimeTextView.text = convertSimpleDateFormatToTime(messageDomain.sentTime)[1]
 
-            val messageSentTimeInFormat = messageDomain.sentTime
-                .replace(" ", "")
-                .replace("-", "")
-                .replace(":", "")
-                .replace(".", "")
-                .dropLast(3)
+            val messageSentTimeInFormat = convertToAbbreTime(messageDomain.sentTime)
 
             val leftsToRead = readersLog.count { it.readTime.isEmpty() || it.readTime < messageSentTimeInFormat }
             if (leftsToRead == 0) {
@@ -243,12 +218,7 @@ class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: 
                 .into(myImageView)
             myTimeTextView.text = convertSimpleDateFormatToTime(messageDomain.sentTime)[1]
 
-            val messageSentTimeInFormat = messageDomain.sentTime
-                .replace(" ", "")
-                .replace("-", "")
-                .replace(":", "")
-                .replace(".", "")
-                .dropLast(3)
+            val messageSentTimeInFormat = convertToAbbreTime(messageDomain.sentTime)
 
             val leftsToRead = readersLog.count { it.readTime.isEmpty() || it.readTime < messageSentTimeInFormat }
             if (leftsToRead == 0) {
@@ -284,12 +254,7 @@ class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: 
                 .into(othersImageView)
             othersTimeTextView.text = convertSimpleDateFormatToTime(messageDomain.sentTime)[1]
 
-            val messageSentTimeInFormat = messageDomain.sentTime
-                .replace(" ", "")
-                .replace("-", "")
-                .replace(":", "")
-                .replace(".", "")
-                .dropLast(3)
+            val messageSentTimeInFormat = convertToAbbreTime(messageDomain.sentTime)
 
             val leftsToRead = readersLog.count { it.readTime.isEmpty() || it.readTime < messageSentTimeInFormat }
             if (leftsToRead == 0) {
@@ -326,12 +291,7 @@ class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: 
                 .into(othersImageView)
             othersTimeTextView.text = convertSimpleDateFormatToTime(messageDomain.sentTime)[1]
 
-            val messageSentTimeInFormat = messageDomain.sentTime
-                .replace(" ", "")
-                .replace("-", "")
-                .replace(":", "")
-                .replace(".", "")
-                .dropLast(3)
+            val messageSentTimeInFormat = convertToAbbreTime(messageDomain.sentTime)
 
             val leftsToRead = readersLog.count { it.readTime.isEmpty() || it.readTime < messageSentTimeInFormat }
             if (leftsToRead == 0) {
@@ -498,5 +458,11 @@ class MessageAdapter(var messageDomainList: List<MessageDomain>, val senderUID: 
         notifyDataSetChanged()
     }
 
-
+    private fun convertToAbbreTime(sentTime: String): String {
+        return sentTime.replace(" ", "")
+            .replace("-", "")
+            .replace(":", "")
+            .replace(".", "")
+            .dropLast(3)
+    }
 }

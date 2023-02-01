@@ -37,23 +37,14 @@ class ChatroomRepositoryImpl @Inject constructor(
 
         if (mChatroomStateCoroutineScope != null) return
 
-        if (mChatroomStateMyValueEventListener != null) {
-            db
-                .child(FIREBASE_FIRST_CHILD_USERS)
-                .child(myId)
-                .child(FIREBASE_SECOND_CHILD_CHATROOMS)
-                .child(yourId)
-                .removeEventListener(mChatroomStateMyValueEventListener!!)
-        }
-
         val randomChatRoomId = time + UUID.randomUUID()
 
         mChatroomStateMyValueEventListener = object: ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 if (!snapshot.exists()) {
                     val chatroomData: MutableMap<String, Any> = hashMapOf(
-                        "$FIREBASE_FIRST_CHILD_USERS/$yourId/$FIREBASE_SECOND_CHILD_CHATROOMS/" to mapOf(myId to randomChatRoomId),
-                        "$FIREBASE_FIRST_CHILD_USERS/$myId/$FIREBASE_SECOND_CHILD_CHATROOMS/" to mapOf(yourId to randomChatRoomId),
+                        "$FIREBASE_FIRST_CHILD_USERS/$yourId/$FIREBASE_SECOND_CHILD_CHATROOMS/$myId/" to randomChatRoomId,
+                        "$FIREBASE_FIRST_CHILD_USERS/$myId/$FIREBASE_SECOND_CHILD_CHATROOMS/$yourId/" to randomChatRoomId,
                         "$FIREBASE_FIRST_CHILD_CHATS/$randomChatRoomId/$FIREBASE_SECOND_CHILD_READ_LOG" to mapOf(myId to time, yourId to "")
                     )
 
@@ -85,7 +76,7 @@ class ChatroomRepositoryImpl @Inject constructor(
             .child(myId)
             .child(FIREBASE_SECOND_CHILD_CHATROOMS)
             .child(yourId)
-            .addValueEventListener(mChatroomStateMyValueEventListener!!)
+            .addListenerForSingleValueEvent(mChatroomStateMyValueEventListener!!)
     }
 
     override fun fetchChatroomListFromRemoteDB(currentUserId: String, coroutineScope: CoroutineScope) {

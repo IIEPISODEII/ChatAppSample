@@ -50,7 +50,7 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    suspend fun sendMessage(
+    fun sendMessage(
         message: MessageDomain,
         chatRoom: String,
         fileUploadListener: FileUploadListener

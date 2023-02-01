@@ -6,7 +6,7 @@ import com.example.chatappsample.domain.repository.ChatRepository
 import javax.inject.Inject
 
 class SendMessageUsecase @Inject constructor(private val chatRepository: ChatRepository) {
-    suspend operator fun invoke(
+    operator fun invoke(
         message: MessageDomain,
         chatRoom: String,
         fileUploadListener: FileUploadListener

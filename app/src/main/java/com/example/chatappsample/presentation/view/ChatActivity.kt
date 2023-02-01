@@ -229,8 +229,11 @@ class ChatActivity : AppCompatActivity() {
                     )
                 }
 
-                if (messageList.last().senderId == UserViewModel.currentUserId()) {
-                    chattingRecyclerView.layoutManager?.scrollToPosition(messageAdapter.messageDomainList.lastIndex+1)
+                if (currMessage.senderId == UserViewModel.currentUserId()) {
+                    lifecycleScope.launch {
+                        delay(50L)
+                        chattingRecyclerView.layoutManager?.scrollToPosition(messageAdapter.messageDomainList.lastIndex)
+                    }
                 }
             }
 
@@ -271,13 +274,12 @@ class ChatActivity : AppCompatActivity() {
                 sentTime = sdf
             )
 
-            lifecycleScope.launch(Dispatchers.IO) {
-                chatViewModel.sendMessage(
-                    message = messageDomainObject,
-                    chatRoom = chatRoomId,
-                    fileUploadListener = onMessageSendListener
-                )
-            }
+            chatViewModel.sendMessage(
+                message = messageDomainObject,
+                chatRoom = chatRoomId,
+                fileUploadListener = onMessageSendListener
+            )
+
             messageBox.setText("")
         }
 

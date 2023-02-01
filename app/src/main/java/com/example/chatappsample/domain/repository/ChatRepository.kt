@@ -24,7 +24,7 @@ interface ChatRepository {
         offset: Int
     ): List<MessageDomain?>
 
-    suspend fun sendMessage(
+    fun sendMessage(
         message: MessageDomain,
         chatRoom: String,
         fileUploadListener: FileUploadListener

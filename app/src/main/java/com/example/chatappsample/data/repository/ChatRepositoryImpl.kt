@@ -101,7 +101,7 @@ class ChatRepositoryImpl @Inject constructor(
             }
     }
 
-    override suspend fun sendMessage(
+    override fun sendMessage(
         message: MessageDomain,
         chatRoom: String,
         fileUploadListener: FileUploadListener

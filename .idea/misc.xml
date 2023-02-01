@@ -32,12 +32,16 @@
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/constraintlayout_message_date.xml" value="0.2296875" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/constraintlayout_my_image.xml" value="0.3619791666666667" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/constraintlayout_my_image_with_date.xml" value="0.3619791666666667" />
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/constraintlayout_my_image_with_date_series.xml" value="0.3619791666666667" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/constraintlayout_my_image_without_date.xml" value="0.3619791666666667" />
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/constraintlayout_my_image_without_date_series.xml" value="0.3619791666666667" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/constraintlayout_my_message.xml" value="0.3619791666666667" />
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/constraintlayout_my_message_series.xml" value="0.3619791666666667" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/constraintlayout_my_message_with_date.xml" value="0.1" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/constraintlayout_my_message_without_date.xml" value="0.1" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/constraintlayout_others_image.xml" value="0.3619791666666667" />
-        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/constraintlayout_others_image_with_date.xml" value="0.3619791666666667" />
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/constraintlayout_others_image_series.xml" value="0.3619791666666667" />
+        <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/constraintlayout_others_image_with_date.xml" value="0.1" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/constraintlayout_others_image_without_date.xml" value="0.3619791666666667" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/constraintlayout_others_message.xml" value="0.25" />
         <entry key="..\:/myAndroidProject/AndroidStudioProjects/ChatAppSample/app/src/main/res/layout/constraintlayout_others_message_with_date.xml" value="0.1" />
