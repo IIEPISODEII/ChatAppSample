@@ -29,25 +29,21 @@ class ChatRepositoryImpl @Inject constructor(
 
     private val db = firebaseDatabase.reference
 
+    private val observedChatrooms = hashSetOf<String>()
+
     override fun fetchMessagesFromRemoteDB(
         chatRoom: String,
         coroutineScope: CoroutineScope
     ) {
-
-        if (mMessageCoroutineScope != null && mMessageCoroutineScope == coroutineScope) return
-
-        if (mMessageChildEventListener != null) {
-            db
-                .child(FIREBASE_FIRST_CHILD_CHATS)
-                .child(chatRoom)
-                .child(FIREBASE_SECOND_CHILD_MESSAGES)
-                .removeEventListener(mMessageChildEventListener!!)
-        }
+        if (chatRoom in observedChatrooms) return
+        observedChatrooms.add(chatRoom)
 
         mMessageCoroutineScope = coroutineScope
         mMessageChildEventListener = object: ChildEventListener {
             override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
-                mMessageCoroutineScope!!.launch(Dispatchers.IO) {
+
+                CoroutineScope(Dispatchers.IO).launch(Dispatchers.IO) {
+
                     val receivedMessageData = snapshot.getValue(MessageData::class.java)
                     receivedMessageData?.chatRoom = chatRoom
                     if (receivedMessageData != null) {
@@ -55,6 +51,7 @@ class ChatRepositoryImpl @Inject constructor(
                             .getMessageDao()
                             .insertMessage(receivedMessageData)
                     }
+
                 }
             }
 

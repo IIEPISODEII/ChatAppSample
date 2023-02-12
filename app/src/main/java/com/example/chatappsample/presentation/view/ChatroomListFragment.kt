@@ -23,8 +23,6 @@ import com.example.chatappsample.presentation.viewmodel.ChatViewModel
 import com.example.chatappsample.presentation.viewmodel.UserViewModel
 import com.example.chatappsample.util.COERCE_DATE_FORMAT
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.stateIn
 import java.lang.NullPointerException
 import java.util.*
 import kotlin.collections.ArrayList
@@ -60,26 +58,42 @@ class ChatroomListFragment : Fragment() {
         )
         binding!!.rvMainChatroomRecyclerview.adapter = rvAdapter
 
+        var chatroomList: List<ChatroomDomain>
         lifecycleScope.launch(Dispatchers.IO) {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.fetchChatroomList().collect {
-                    if (it.isEmpty()) return@collect
+                viewModel.fetchChatroomList().collect { list ->
+                    if (list.isEmpty()) return@collect
 
-                    val chatroomList = it as ArrayList<ChatroomDomain>
-                    rvAdapter.chatroomDomainList = chatroomList
-                    rvAdapter.chatroomDomainList.forEachIndexed { idx, chatroom ->
+                    list.forEach { chatroom ->
 
-                        viewModel.fetchMessagesFromRemoteDB(chatroom.chatroomId, this)
+                        if (chatroom.chatroomId in fetchLastMessageJobs) return@collect
 
-                        launch(Dispatchers.Main) {
+                        viewModel.fetchMessagesFromRemoteDB(chatroom.chatroomId, viewLifecycleOwner.lifecycleScope)
+
+                        val job = viewLifecycleOwner.lifecycleScope.launch outerLaunch@ {
+                            chatroom.readerLog
+                                .filter { reader -> reader.userId != UserViewModel.currentUserId() }
+                                .forEach innerForEach@ { reader ->
+                                    if (reader.userId in userIdToNameMap) return@innerForEach
+                                    viewModel.fetchUserInfo(reader.userId).observe(viewLifecycleOwner) { user ->
+                                        userIdToNameMap[reader.userId] = user.name
+                                        val position = rvAdapter.addChatroomNameToMap(chatroom, user.uid, user.name)
+                                        rvAdapter.notifyItemChanged(position)
+                                    }
+                                }
+                            if (viewModel.fetchLastMessage(chatroom).hasObservers()) return@outerLaunch
+
                             viewModel.fetchLastMessage(chatroom).observe(viewLifecycleOwner) { message ->
-                                rvAdapter.addLastMessageToList(chatroom, message)
-                                rvAdapter.notifyItemChanged(idx)
+
+                                rvAdapter.addLastMessageToMap(chatroom, message)
+                                chatroomList =
+                                    list.sortedByDescending { rvAdapter.getLastMessageToMap()[it.chatroomId]?.sentTime }
+
+                                rvAdapter.chatroomDomainList = chatroomList.toList()
+                                rvAdapter.notifyDataSetChanged()
                             }
                         }
-                    }
-                    launch(Dispatchers.Main) {
-                        rvAdapter.notifyDataSetChanged()
+                        fetchLastMessageJobs[chatroom.chatroomId] = job
                     }
                 }
             }
@@ -137,4 +151,7 @@ class ChatroomListFragment : Fragment() {
         progressBar?.clearAnimation()
         progressBar?.visibility = View.INVISIBLE
     }
+
+    private val userIdToNameMap = hashMapOf<String, String>()
+    private val fetchLastMessageJobs = hashMapOf<String, Job>()
 }

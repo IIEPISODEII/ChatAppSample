@@ -19,9 +19,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class UserViewModel @Inject constructor(
-    private val fetchCurrentUserUsecase: FetchCurrentUserUsecase,
     private val fetchUserListFromRemoteDBUsecase: FetchUserListFromRemoteDBUsecase,
     private val fetchUserListUsecase: FetchUserListFromLocalDBUsecase,
+    private val fetchUserInfoFromLocalDBUsecase: FetchUserInfoFromLocalDBUsecase,
     private val fetchChatRoomListFromRemoteDBUsecase: FetchChatroomListFromRemoteDBUsecase,
     private val fetchChatRoomListUsecase: FetchChatroomListFromLocalDBUsecase,
     private val signUpUsecase: SignUpUsecase,
@@ -36,13 +36,15 @@ class UserViewModel @Inject constructor(
     private val updateChatRoomUsecase: UpdateChatroomUsecase
 ) : ViewModel() {
 
-    val currentUserInfo = fetchCurrentUserUsecase(currentUserId()).asLiveData()
+    val currentUserInfo = fetchUserInfoFromLocalDBUsecase(currentUserId()).asLiveData()
 
     fun fetchChatroomListFromRemoteDB() {
         fetchChatRoomListFromRemoteDBUsecase(currentUserId(), viewModelScope)
     }
 
     fun fetchUserListFromRemoteDB() = fetchUserListFromRemoteDBUsecase(viewModelScope)
+
+    fun fetchUserInfo(userId: String) = fetchUserInfoFromLocalDBUsecase(userId).asLiveData()
 
     suspend fun fetchAllUsersList(): Flow<List<UserDomain>> = fetchUserListUsecase(currentUserId())
 

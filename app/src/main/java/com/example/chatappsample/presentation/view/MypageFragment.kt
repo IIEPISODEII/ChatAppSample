@@ -57,6 +57,7 @@ class MypageFragment : Fragment() {
                     Glide
                         .with(this@MypageFragment.requireActivity())
                         .load(byteArray)
+                        .error(R.drawable.ic_baseline_person_24)
                         .centerCrop()
                         .into(mBinding.ivMyPageUserProfileImage)
                 }
@@ -65,6 +66,7 @@ class MypageFragment : Fragment() {
                     Glide
                         .with(this@MypageFragment.requireActivity())
                         .load(R.drawable.ic_baseline_person_24)
+                        .error(R.drawable.ic_baseline_person_24)
                         .centerCrop()
                         .into(mBinding.ivMyPageUserProfileImage)
                     Log.e("Download Profile", e.message ?: "")

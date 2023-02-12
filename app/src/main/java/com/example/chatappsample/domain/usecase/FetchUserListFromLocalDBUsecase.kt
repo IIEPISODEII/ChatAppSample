@@ -12,7 +12,7 @@ class FetchUserListFromLocalDBUsecase @Inject constructor(private val userReposi
         return userRepository.fetchUserListFromLocalDB().map { list ->
             list.filter { user ->
                 user.uid != myId
-            }
+            }.sortedBy { it.name }
         }
     }
 

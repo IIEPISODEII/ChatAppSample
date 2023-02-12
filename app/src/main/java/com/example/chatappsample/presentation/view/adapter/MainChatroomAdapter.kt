@@ -3,17 +3,20 @@ package com.example.chatappsample.presentation.view.adapter
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.chatappsample.R
 import com.example.chatappsample.domain.dto.ChatroomDomain
 import com.example.chatappsample.domain.dto.MessageDomain
 import com.example.chatappsample.util.convertSimpleDateFormatToTime
 import com.google.android.material.textview.MaterialTextView
-import java.text.SimpleDateFormat
 
-class MainChatroomAdapter(var currentUserId: String, var chatroomDomainList: ArrayList<ChatroomDomain>): RecyclerView.Adapter<MainChatroomAdapter.CustomViewHolder>() {
+class MainChatroomAdapter(var currentUserId: String, var chatroomDomainList: List<ChatroomDomain>):
+    ListAdapter<ChatroomDomain, MainChatroomAdapter.CustomViewHolder>(ChatroomDiffUtil()) {
 
-    private val lastMessageDomainList: MutableMap<String, MessageDomain?> = mutableMapOf()
+    private val chatroomToLastMessageMap: HashMap<String, MessageDomain?> = hashMapOf()
+    private val chatroomToNameMap = hashMapOf<String, HashMap<String, String>>()
 
     inner class CustomViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val chatroomName: MaterialTextView = itemView.findViewById(R.id.tv_main_chatroom_name)
@@ -34,9 +37,9 @@ class MainChatroomAdapter(var currentUserId: String, var chatroomDomainList: Arr
 
     override fun onBindViewHolder(holder: CustomViewHolder, position: Int) {
         val selectedChatroom = chatroomDomainList[position]
-        val lastMessage = lastMessageDomainList[selectedChatroom.chatroomId]
+        val lastMessage = chatroomToLastMessageMap[selectedChatroom.chatroomId]
 
-        holder.chatroomName.text = selectedChatroom.chatroomName
+        holder.chatroomName.text = chatroomToNameMap[selectedChatroom.chatroomId]?.values?.joinToString(separator = ", ", postfix = "님과의 대화방") ?: "님과의 대화방"
         holder.userLastMessage.text = lastMessage?.message?.ifEmpty { "사진" } ?: ""
         holder.userLastMessageTime.text = lastMessage?.sentTime ?: ""
 
@@ -48,9 +51,25 @@ class MainChatroomAdapter(var currentUserId: String, var chatroomDomainList: Arr
 
     override fun getItemCount(): Int = chatroomDomainList.size
 
-    fun addLastMessageToList(chatRoomDomain: ChatroomDomain, messageDomain: MessageDomain?) {
-        lastMessageDomainList[chatRoomDomain.chatroomId] = messageDomain
+    fun addLastMessageToMap(chatRoomDomain: ChatroomDomain, messageDomain: MessageDomain?) {
+        chatroomToLastMessageMap[chatRoomDomain.chatroomId] = messageDomain
     }
+
+    /**
+     * Set ChatroomName
+     *
+     * @param chatroomDomain
+     * @param chatroomName2
+     * @return return index of modified chatroom position of adapter list
+     */
+    fun addChatroomNameToMap(chatroomDomain: ChatroomDomain, uid: String, userName: String): Int {
+        if (chatroomDomain.chatroomId !in chatroomToNameMap) chatroomToNameMap[chatroomDomain.chatroomId] = hashMapOf()
+        chatroomToNameMap[chatroomDomain.chatroomId]?.put(uid, userName)
+
+        return chatroomDomainList.indexOfFirst { it.chatroomId == chatroomDomain.chatroomId }
+    }
+
+    fun getLastMessageToMap() = chatroomToLastMessageMap
 
     private var onChatRoomClickListener: ChatRoomClickListener? = null
 
@@ -60,5 +79,15 @@ class MainChatroomAdapter(var currentUserId: String, var chatroomDomainList: Arr
 
     fun setOnChatRoomClickListener(listener: ChatRoomClickListener) {
         this.onChatRoomClickListener = listener
+    }
+
+    class ChatroomDiffUtil : DiffUtil.ItemCallback<ChatroomDomain>() {
+        override fun areItemsTheSame(oldItem: ChatroomDomain, newItem: ChatroomDomain): Boolean {
+            return false
+        }
+
+        override fun areContentsTheSame(oldItem: ChatroomDomain, newItem: ChatroomDomain): Boolean {
+            return false
+        }
     }
 }
