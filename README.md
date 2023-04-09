@@ -2,11 +2,12 @@
 
 ## 개요
 가입자들과 채팅, 사진 등을 주고받을 수 있으며 프로필 수정 기능 등이 구현되어 있는 간단한 채팅 어플리케이션 토이프로젝트입니다.
-![4](https://user-images.githubusercontent.com/60639734/230767050-d607d4ee-d1c2-4716-9675-fc96ee26fb16.png)
-![5](https://user-images.githubusercontent.com/60639734/230767055-2427bd7a-d03b-48cc-ab2f-d76df571b96b.png)
-![1](https://user-images.githubusercontent.com/60639734/230767061-4b3ef224-30fd-42d6-a58a-56a043fb9782.png)
-![3](https://user-images.githubusercontent.com/60639734/230767063-77f4007a-9a2c-4071-9369-266abaf9faa3.png)
-![2](https://user-images.githubusercontent.com/60639734/230767066-258c4fb7-d843-463c-a263-b3ad6b08d109.png)
+![4](https://user-images.githubusercontent.com/60639734/230767246-a025e400-38e9-4d8b-891d-ba285fdde387.png)
+![5](https://user-images.githubusercontent.com/60639734/230767245-93b48110-ca06-4765-9918-a9874d235026.png)
+![3](https://user-images.githubusercontent.com/60639734/230767248-8730c128-d2a1-4e63-a787-351c20c4f551.png)
+![1](https://user-images.githubusercontent.com/60639734/230767250-4a1d0ae7-4741-4c44-a517-5af4a45a9750.png)
+![2](https://user-images.githubusercontent.com/60639734/230767249-02a74654-d3e8-4e20-a74a-56075e3ed3a4.png)
+
 
 
 ## 주요 기능
