@@ -1,38 +1,26 @@
 # ChatAppSample
 
 ## 개요
-가입자들과 채팅, 사진 등을 주고받을 수 있으며 프로필 수정 기능 등이 구현되어 있는 간단한 채팅 어플리케이션 토이프로젝트입니다.
-![4](https://user-images.githubusercontent.com/60639734/230767246-a025e400-38e9-4d8b-891d-ba285fdde387.png)
-![5](https://user-images.githubusercontent.com/60639734/230767245-93b48110-ca06-4765-9918-a9874d235026.png)
-![3](https://user-images.githubusercontent.com/60639734/230767248-8730c128-d2a1-4e63-a787-351c20c4f551.png)
-![1](https://user-images.githubusercontent.com/60639734/230767250-4a1d0ae7-4741-4c44-a517-5af4a45a9750.png)
-![2](https://user-images.githubusercontent.com/60639734/230767249-02a74654-d3e8-4e20-a74a-56075e3ed3a4.png)
+가입자들과 채팅, 사진 등을 주고받을 수 있으며 프로필 수정 기능 등이 구현되어 있는 간단한 채팅 어플리케이션 토이프로젝트입니다.  
 
 
 
 ## 주요 기능
 가입
-
 자동로그인
-
 실시간 채팅
-
 사진(이미지) 주고받기
+프로필 설정(대표 이미지, 닉네임 등)
 
-프로필 수정(이미지, 닉네임 등)
+## 구조
+
 
 ## 사용 기술
-Firebase Realtime Databse
-
-Firestore
-
-Recyclerview DiffUtil(ListAdapter)
-
-MVVM
-
-Clean Architecture
-
-Glide
+  - Firebase Realtime Databse
+  - Firestore
+  - MVVM
+  - Clean Architecture
+  - Glide
 
 ## 구현 목록
 ### :black_square_button: 가입/로그인 관련
@@ -56,3 +44,10 @@ Glide
 
 ### :black_square_button:  프로필 관련
 자기 프로필 수정 (구현 완료)
+
+## 결과물
+![4](https://user-images.githubusercontent.com/60639734/230767246-a025e400-38e9-4d8b-891d-ba285fdde387.png)
+![5](https://user-images.githubusercontent.com/60639734/230767245-93b48110-ca06-4765-9918-a9874d235026.png)
+![3](https://user-images.githubusercontent.com/60639734/230767248-8730c128-d2a1-4e63-a787-351c20c4f551.png)
+![1](https://user-images.githubusercontent.com/60639734/230767250-4a1d0ae7-4741-4c44-a517-5af4a45a9750.png)
+![2](https://user-images.githubusercontent.com/60639734/230767249-02a74654-d3e8-4e20-a74a-56075e3ed3a4.png)
