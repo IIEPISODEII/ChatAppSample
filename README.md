@@ -3,8 +3,6 @@
 ## 개요
 가입자들과 채팅, 사진 등을 주고받을 수 있으며 프로필 수정 기능 등이 구현되어 있는 간단한 채팅 어플리케이션 토이프로젝트입니다.  
 
-
-
 ## 주요 기능
 가입
 자동로그인
@@ -13,7 +11,7 @@
 프로필 설정(대표 이미지, 닉네임 등)
 
 ## 구조
-
+![ChatAppSample 구조_](https://github.com/IIEPISODEII/ChatAppSample/assets/60639734/ca03ab0f-683f-4341-88f2-0a1f28c079ad)
 
 ## 사용 기술
   - Firebase Realtime Databse
